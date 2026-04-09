@@ -208,8 +208,7 @@ export default function TryTheLens({ open, onClose }: TryTheLensProps) {
                       Artist &amp; Track Lens
                     </h3>
                     <p className="text-ink/40 text-sm mt-1">
-                      Live Demo — Drop in a sample Spotify export and get a
-                      clear system read.
+                      No setup. No cleaning. Just drop the export.
                     </p>
                   </div>
                 </div>
@@ -272,7 +271,7 @@ export default function TryTheLens({ open, onClose }: TryTheLensProps) {
                       <>
                         <div className="text-2xl mb-2 opacity-40">↓</div>
                         <p className="text-sm text-ink/50 leading-relaxed">
-                          Drop a Spotify export or try a sample file
+                          Drop a messy Spotify CSV (no cleanup needed)
                         </p>
                       </>
                     )}
@@ -341,7 +340,7 @@ export default function TryTheLens({ open, onClose }: TryTheLensProps) {
                       >
                         <div className="flex items-center gap-3 text-sm text-ink/40">
                           <span className="inline-block w-4 h-4 border-2 border-ink/20 border-t-electric rounded-full animate-spin" />
-                          Reading signals…
+                          Reading the data…
                         </div>
                       </motion.div>
                     ) : result ? (
@@ -358,7 +357,7 @@ export default function TryTheLens({ open, onClose }: TryTheLensProps) {
                       >
                         <div className="mb-5">
                           <div className="eyebrow text-ink/40 mb-1.5">
-                            System read
+                            What the data is actually saying
                           </div>
                           <div className="font-display font-bold text-xl leading-snug">
                             {result.systemRead}
@@ -367,7 +366,7 @@ export default function TryTheLens({ open, onClose }: TryTheLensProps) {
 
                         <div className="mb-5">
                           <div className="eyebrow text-ink/40 mb-1.5">
-                            Recommendation
+                            What to do next
                           </div>
                           <p className="text-sm text-ink/75 leading-relaxed">
                             {result.recommendation}
@@ -376,7 +375,7 @@ export default function TryTheLens({ open, onClose }: TryTheLensProps) {
 
                         <div className="mt-auto">
                           <div className="eyebrow text-ink/40 mb-2">
-                            Signals behind the read
+                            Why
                           </div>
                           <ul className="space-y-1.5">
                             {result.signals.map((sig) => (
@@ -402,7 +401,7 @@ export default function TryTheLens({ open, onClose }: TryTheLensProps) {
                         className="flex-1 rounded-2xl border border-dashed border-ink/10 bg-cream/50 flex items-center justify-center"
                       >
                         <p className="text-sm text-ink/25 text-center px-6">
-                          Select a sample file to see the system read
+                          Pick a sample file to see what the tool outputs
                         </p>
                       </motion.div>
                     )}
@@ -413,8 +412,8 @@ export default function TryTheLens({ open, onClose }: TryTheLensProps) {
               {/* Footer link to full tool */}
               <div className="mt-8 pt-5 border-t border-ink/8 flex items-center justify-between">
                 <p className="text-[11px] text-ink/25">
-                  This is a simulated demo. The full tool supports live Spotify
-                  data.
+                  Most teams already have the data. They just don't have a
+                  clear read on what it means.
                 </p>
                 <a
                   href="https://pih-v2.vercel.app/label"

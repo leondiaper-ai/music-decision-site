@@ -9,10 +9,10 @@ const tools = [
     number: "01",
     title: "Artist & Track Lens",
     tagline:
-      "Teams check streams but rarely agree on what they mean. This tool reads artist health and track signals together — and outputs a clear recommendation: push, hold, or shift.",
+      "Drop in messy CSVs. Get a clear decision. Most teams already have the data — they just don't have a clear read on what it means. This tool removes the interpretation and gives you a next step.",
     href: "https://pih-v2.vercel.app/label",
-    inputs: ["Artist identifier", "Track performance window", "Streaming signals"],
-    outputs: ["Health status", "Track signal read", "Next-step recommendation"],
+    inputs: ["Raw Spotify / streaming exports", "Noisy performance signals", "Mixed time windows"],
+    outputs: ["Clear health status", "What's actually happening", "What to do next"],
     accent: "bg-electric",
     text: "text-paper",
     hasDemo: true,
