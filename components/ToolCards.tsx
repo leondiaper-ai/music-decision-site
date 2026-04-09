@@ -114,7 +114,7 @@ export default function ToolCards() {
                   </div>
 
                   <div className="mt-auto inline-flex items-center gap-2 text-sm font-medium">
-                    {isLens ? "Try demo" : "Open tool"}
+                    {isLens ? "Run a track check" : "Open tool"}
                     <span className="group-hover:translate-x-1 transition-transform">
                       {isLens ? "→" : "↗"}
                     </span>
