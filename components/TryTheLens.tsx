@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 /* ── Sample states ─────────────────────────────────────────── */
 
 interface LensOutput {
-  label: string;
+  filename: string;
   systemRead: string;
   recommendation: string;
   signals: string[];
@@ -14,7 +14,7 @@ interface LensOutput {
 
 const SAMPLES: LensOutput[] = [
   {
-    label: "Strong intent",
+    filename: "spotify_export_strong_intent.csv",
     systemRead: "High intent, healthy growth",
     recommendation:
       "Push now. Audience is responding and broadening — this is the window for paid amplification.",
@@ -25,7 +25,7 @@ const SAMPLES: LensOutput[] = [
     ],
   },
   {
-    label: "Weak follow-through",
+    filename: "spotify_export_weak_follow_through.csv",
     systemRead: "Initial spike, no sustained engagement",
     recommendation:
       "Hold spend. Revisit content strategy before next push — the audience isn't retaining.",
@@ -36,7 +36,7 @@ const SAMPLES: LensOutput[] = [
     ],
   },
   {
-    label: "Mixed signals",
+    filename: "spotify_export_mixed_signals.csv",
     systemRead: "High intent, weak distribution",
     recommendation:
       "Hold paid push. Focus on content cadence and audience growth before spending into a reach window that isn't ready.",
@@ -50,10 +50,9 @@ const SAMPLES: LensOutput[] = [
 
 /* ── Minimal CSV parser ────────────────────────────────────── */
 
-function classifyCSV(text: string): LensOutput {
+function classifyCSV(text: string, name: string): LensOutput {
   const lower = text.toLowerCase();
 
-  // Look for signals in the data
   const hasSaveHigh =
     lower.includes("save") &&
     (lower.includes("high") || lower.includes("above") || lower.includes("strong"));
@@ -66,29 +65,28 @@ function classifyCSV(text: string): LensOutput {
     lower.includes("growth") &&
     (lower.includes("rising") || lower.includes("expanding") || lower.includes("up"));
 
-  // Strong intent: high saves + expanding reach
-  if (hasSaveHigh && hasGrowth && !hasReachWeak) return SAMPLES[0];
-  // Weak follow-through: drop-off signals
-  if (hasDropOff && !hasSaveHigh) return SAMPLES[1];
-  // Default: mixed signals
-  return SAMPLES[2];
+  if (hasSaveHigh && hasGrowth && !hasReachWeak)
+    return { ...SAMPLES[0], filename: name };
+  if (hasDropOff && !hasSaveHigh) return { ...SAMPLES[1], filename: name };
+  return { ...SAMPLES[2], filename: name };
 }
 
 /* ── Component ─────────────────────────────────────────────── */
 
 export default function TryTheLens() {
   const [result, setResult] = useState<LensOutput | null>(null);
+  const [loadedFile, setLoadedFile] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   const showResult = useCallback((output: LensOutput) => {
     setProcessing(true);
     setResult(null);
-    // Brief processing pause to feel real
+    setLoadedFile(output.filename);
     setTimeout(() => {
       setProcessing(false);
       setResult(output);
-    }, 600);
+    }, 700);
   }, []);
 
   const handleDrop = useCallback(
@@ -100,7 +98,7 @@ export default function TryTheLens() {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
-        showResult(classifyCSV(text));
+        showResult(classifyCSV(text, file.name));
       };
       reader.readAsText(file);
     },
@@ -132,7 +130,7 @@ export default function TryTheLens() {
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* ── Left: Input ── */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
               {/* Drop zone */}
               <div
                 onDrop={handleDrop}
@@ -149,36 +147,68 @@ export default function TryTheLens() {
                   }
                 `}
               >
-                <div className="text-2xl mb-2 opacity-40">↓</div>
-                <p className="text-sm text-ink/50 leading-relaxed">
-                  Drag &amp; drop a CSV file
-                </p>
-                <p className="text-[11px] text-ink/30 mt-1">
-                  or choose a sample below
-                </p>
+                {loadedFile && !processing ? (
+                  <>
+                    <div className="text-lg mb-1 opacity-30">✓</div>
+                    <p className="text-sm text-ink/50 leading-relaxed">
+                      Loaded: <span className="font-mono text-ink/70">{loadedFile}</span>
+                    </p>
+                  </>
+                ) : processing ? (
+                  <>
+                    <span className="inline-block w-5 h-5 border-2 border-ink/15 border-t-electric rounded-full animate-spin mb-2" />
+                    <p className="text-sm text-ink/40 leading-relaxed">
+                      Reading <span className="font-mono">{loadedFile}</span>…
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl mb-2 opacity-40">↓</div>
+                    <p className="text-sm text-ink/50 leading-relaxed">
+                      Drop a Spotify export or try a sample file
+                    </p>
+                  </>
+                )}
               </div>
 
-              {/* Sample buttons */}
-              <div className="flex flex-wrap gap-2">
-                {SAMPLES.map((s) => (
-                  <button
-                    key={s.label}
-                    onClick={() => showResult(s)}
-                    className="
-                      px-4 py-2 rounded-xl text-sm font-medium
-                      border border-ink/12 bg-cream
-                      hover:border-ink/30 hover:bg-cream/80
-                      transition-colors cursor-pointer
-                    "
-                  >
-                    {s.label}
-                  </button>
-                ))}
+              {/* Sample file chips */}
+              <div>
+                <p className="text-[11px] text-ink/30 mb-2.5 uppercase tracking-widest font-semibold">
+                  Sample files
+                </p>
+                <div className="flex flex-col gap-2">
+                  {SAMPLES.map((s) => (
+                    <button
+                      key={s.filename}
+                      onClick={() => showResult(s)}
+                      className={`
+                        group flex items-center gap-2.5 px-3.5 py-2.5
+                        rounded-xl text-left
+                        border transition-all cursor-pointer
+                        ${
+                          loadedFile === s.filename
+                            ? "border-electric/30 bg-electric/5"
+                            : "border-ink/10 bg-cream hover:border-ink/25"
+                        }
+                      `}
+                    >
+                      <span className="shrink-0 text-ink/25 text-xs">
+                        <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 1.5h7.5L12.5 5.5v9a1 1 0 01-1 1h-9.5a1 1 0 01-1-1v-13a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2"/>
+                          <path d="M8.5 1.5v4h4" stroke="currentColor" strokeWidth="1.2"/>
+                        </svg>
+                      </span>
+                      <span className="font-mono text-[13px] text-ink/60 group-hover:text-ink/80 transition-colors truncate">
+                        {s.filename}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* ── Right: Output ── */}
-            <div className="min-h-[240px] flex items-stretch">
+            <div className="min-h-[300px] flex items-stretch">
               <AnimatePresence mode="wait">
                 {processing ? (
                   <motion.div
@@ -198,7 +228,7 @@ export default function TryTheLens() {
                   </motion.div>
                 ) : result ? (
                   <motion.div
-                    key={result.label}
+                    key={result.filename}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
@@ -260,7 +290,7 @@ export default function TryTheLens() {
                     "
                   >
                     <p className="text-sm text-ink/25 text-center px-6">
-                      Select a sample or drop a file to see the system read
+                      Select a sample file to see the system read
                     </p>
                   </motion.div>
                 )}
