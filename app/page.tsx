@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import SystemSection from "@/components/SystemSection";
 import DecisionExamples from "@/components/DecisionExamples";
 import ToolCards from "@/components/ToolCards";
+import TryTheLens from "@/components/TryTheLens";
 import ExampleInPractice from "@/components/ExampleInPractice";
 import WhySection from "@/components/WhySection";
 import Footer from "@/components/Footer";
@@ -17,6 +18,7 @@ export default function Page() {
       <SystemSection />
       <DecisionExamples />
       <ToolCards />
+      <TryTheLens />
       <ExampleInPractice />
       <WhySection />
       <Footer />
