@@ -7,17 +7,24 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface LensOutput {
   filename: string;
-  systemRead: string;
-  recommendation: string;
+  decision: string;
+  decisionColor: string;
+  why: string;
+  actions: string[];
   signals: string[];
 }
 
 const SAMPLES: LensOutput[] = [
   {
     filename: "spotify_export_strong_intent.csv",
-    systemRead: "High intent, healthy growth",
-    recommendation:
-      "Push now. Audience is responding and broadening — this is the window for paid amplification.",
+    decision: "PUSH — Momentum is real",
+    decisionColor: "text-mint",
+    why: "Audience is responding and broadening. Save rate is well above baseline and reach is expanding daily. This is the window.",
+    actions: [
+      "Scale paid spend now",
+      "Increase content cadence to sustain momentum",
+      "Brief commercial team — this is a priority push",
+    ],
     signals: [
       "Save rate 40% above baseline",
       "Reach expanding day-on-day",
@@ -26,9 +33,14 @@ const SAMPLES: LensOutput[] = [
   },
   {
     filename: "spotify_export_weak_follow_through.csv",
-    systemRead: "Initial spike, no sustained engagement",
-    recommendation:
-      "Hold spend. Revisit content strategy before next push — the audience isn't retaining.",
+    decision: "HOLD — Not ready to scale",
+    decisionColor: "text-signal",
+    why: "Strong initial spike but engagement dropped off fast. The audience isn't retaining — spending now would burn budget into a weak window.",
+    actions: [
+      "Hold all paid spend",
+      "Revisit content strategy before next push",
+      "Diagnose why listeners aren't coming back",
+    ],
     signals: [
       "Strong day-one streams, sharp drop by day 3",
       "Save rate below baseline",
@@ -37,13 +49,18 @@ const SAMPLES: LensOutput[] = [
   },
   {
     filename: "spotify_export_mixed_signals.csv",
-    systemRead: "High intent, weak distribution",
-    recommendation:
-      "Hold paid push. Focus on content cadence and audience growth before spending into a reach window that isn't ready.",
+    decision: "HOLD — Build before you spend",
+    decisionColor: "text-sun",
+    why: "Strong intent but reach is flattening early. The core audience is engaged but the track isn't reaching new listeners yet.",
+    actions: [
+      "Hold paid push",
+      "Focus on content cadence and organic growth",
+      "Build audience before scaling spend",
+    ],
     signals: [
       "Save rate above baseline",
       "Reach flattening after day 3",
-      "Growth not broadening beyond core audience yet",
+      "Growth not broadening beyond core audience",
     ],
   },
 ];
@@ -355,37 +372,60 @@ export default function TryTheLens({ open, onClose }: TryTheLensProps) {
                         }}
                         className="flex-1 rounded-2xl border border-ink/10 bg-cream p-6 md:p-7 flex flex-col"
                       >
-                        <div className="mb-5">
-                          <div className="eyebrow text-ink/40 mb-1.5">
-                            What the data is actually saying
+                        {/* ── DECISION — dominant block ── */}
+                        <div className="mb-5 pb-5 border-b border-ink/8">
+                          <div className="eyebrow text-ink/30 mb-2">
+                            Decision
                           </div>
-                          <div className="font-display font-bold text-xl leading-snug">
-                            {result.systemRead}
+                          <div
+                            className={`font-display font-black text-2xl md:text-3xl leading-tight tracking-tight ${result.decisionColor}`}
+                          >
+                            {result.decision}
                           </div>
                         </div>
 
+                        {/* ── WHY — short explanation ── */}
                         <div className="mb-5">
-                          <div className="eyebrow text-ink/40 mb-1.5">
-                            What to do next
+                          <div className="eyebrow text-ink/30 mb-1.5">
+                            Why
                           </div>
-                          <p className="text-sm text-ink/75 leading-relaxed">
-                            {result.recommendation}
+                          <p className="text-sm text-ink/70 leading-relaxed">
+                            {result.why}
                           </p>
                         </div>
 
-                        <div className="mt-auto">
-                          <div className="eyebrow text-ink/40 mb-2">
-                            Why
+                        {/* ── WHAT TO DO NEXT — action bullets ── */}
+                        <div className="mb-5">
+                          <div className="eyebrow text-ink/30 mb-2">
+                            What to do next
                           </div>
                           <ul className="space-y-1.5">
-                            {result.signals.map((sig) => (
+                            {result.actions.map((action) => (
                               <li
-                                key={sig}
-                                className="flex items-start gap-2 text-sm text-ink/60 leading-relaxed"
+                                key={action}
+                                className="flex items-start gap-2 text-sm text-ink/80 leading-relaxed font-medium"
                               >
                                 <span className="text-signal mt-0.5 shrink-0">
                                   →
                                 </span>
+                                {action}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* ── SUPPORTING SIGNALS — lower priority ── */}
+                        <div className="mt-auto pt-4 border-t border-ink/6">
+                          <div className="eyebrow text-ink/20 mb-2">
+                            Supporting signals
+                          </div>
+                          <ul className="space-y-1">
+                            {result.signals.map((sig) => (
+                              <li
+                                key={sig}
+                                className="flex items-start gap-2 text-[13px] text-ink/35 leading-relaxed"
+                              >
+                                <span className="mt-0.5 shrink-0">·</span>
                                 {sig}
                               </li>
                             ))}
