@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import TryTheLens from "./TryTheLens";
 
 const tools = [
   {
@@ -116,6 +117,9 @@ export default function ToolCards() {
             </motion.a>
           ))}
         </div>
+
+        {/* Try the Artist & Track Lens demo */}
+        <TryTheLens />
 
         {/* Used in practice strip */}
         <motion.div
