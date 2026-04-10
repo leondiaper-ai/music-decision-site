@@ -352,13 +352,26 @@ export default function LensPage() {
             </svg>
             Back to overview
           </Link>
-          <div className="flex items-center gap-2.5">
-            <div className="bg-electric text-paper w-7 h-7 rounded-lg flex items-center justify-center font-display font-bold text-xs shadow-[2px_2px_0_0_rgba(14,14,14,1)]">
-              01
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-2.5">
+              <div className="bg-electric text-paper w-7 h-7 rounded-lg flex items-center justify-center font-display font-bold text-xs shadow-[2px_2px_0_0_rgba(14,14,14,1)]">
+                01
+              </div>
+              <span className="text-sm font-display font-bold text-ink/70 hidden sm:inline">
+                Artist &amp; Track Lens
+              </span>
             </div>
-            <span className="text-sm font-display font-bold text-ink/70">
-              Artist &amp; Track Lens
-            </span>
+            <a
+              href={FULL_TOOL_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper px-4 py-2 text-xs font-display font-bold tracking-wide hover:bg-signal transition-colors shadow-[2px_2px_0_0_rgba(44,37,255,1)] hover:shadow-[3px_3px_0_0_rgba(44,37,255,1)]"
+            >
+              Open the tool
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M4 2h5v5M9 2L3.5 7.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
           </div>
         </div>
       </header>
