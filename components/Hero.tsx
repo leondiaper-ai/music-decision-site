@@ -62,17 +62,17 @@ export default function Hero() {
             className="md:col-span-6 flex flex-wrap gap-3 md:justify-end"
           >
             <a
-              href="#system"
+              href="/lens"
               className="group inline-flex items-center gap-2 rounded-full bg-ink text-paper px-6 py-3 text-sm font-medium hover:bg-signal transition-colors"
             >
-              Explore the system
+              Try the demo
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </a>
             <a
-              href="#tools"
+              href="#system"
               className="inline-flex items-center gap-2 rounded-full border border-ink/20 px-6 py-3 text-sm font-medium hover:border-ink hover:bg-ink hover:text-paper transition-colors"
             >
-              View tools
+              Explore the system
             </a>
           </motion.div>
         </div>

@@ -210,93 +210,49 @@ function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
   );
 }
 
-/* ── Lens picker (Step 1: Choose your lens) ────────────────── */
+/* ── Lens toggle (inline switch) ───────────────────────────── */
 
-function LensPicker({ onSelect }: { onSelect: (m: LensMode) => void }) {
-  const cards: {
-    key: LensMode;
-    label: string;
-    sub: string;
-    cta: string;
-    accent: string;
-    accentBorder: string;
-    pillBg: string;
-    pillText: string;
-  }[] = [
-    {
-      key: "artist",
-      label: "Artist Lens",
-      sub: "Understand overall artist health and momentum.",
-      cta: "Analyse an artist",
-      accent: "hover:bg-electric/[0.04]",
-      accentBorder: "hover:border-electric/40",
-      pillBg: "bg-electric",
-      pillText: "text-paper",
-    },
-    {
-      key: "track",
-      label: "Track Lens",
-      sub: "Decide whether a specific track should scale.",
-      cta: "Analyse a track",
-      accent: "hover:bg-signal/[0.04]",
-      accentBorder: "hover:border-signal/40",
-      pillBg: "bg-signal",
-      pillText: "text-paper",
-    },
+function LensToggle({
+  value,
+  onChange,
+}: {
+  value: LensMode;
+  onChange: (m: LensMode) => void;
+}) {
+  const opts: { key: LensMode; label: string }[] = [
+    { key: "artist", label: "Artist Lens" },
+    { key: "track", label: "Track Lens" },
   ];
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <p className="text-[11px] tracking-[0.18em] uppercase font-semibold text-ink/40 mb-4">
-        Choose your lens
-      </p>
-      <div className="grid md:grid-cols-2 gap-5">
-        {cards.map((card) => (
+    <div className="inline-flex items-center gap-1 p-1 rounded-full border border-ink/12 bg-cream">
+      {opts.map((o) => {
+        const active = o.key === value;
+        return (
           <button
-            key={card.key}
-            onClick={() => onSelect(card.key)}
+            key={o.key}
+            onClick={() => onChange(o.key)}
             className={`
-              group relative text-left rounded-3xl border border-ink/12 bg-cream
-              p-7 md:p-9
+              px-3.5 py-1.5 rounded-full text-xs font-display font-bold tracking-wide
               transition-all cursor-pointer
-              shadow-[6px_6px_0_0_rgba(14,14,14,1)]
-              hover:shadow-[8px_8px_0_0_rgba(14,14,14,1)]
-              hover:-translate-x-[1px] hover:-translate-y-[1px]
-              ${card.accent} ${card.accentBorder}
+              ${
+                active
+                  ? "bg-ink text-paper shadow-[2px_2px_0_0_rgba(44,37,255,1)]"
+                  : "text-ink/45 hover:text-ink/80"
+              }
             `}
           >
-            <div className="flex items-center gap-2 mb-5">
-              <span
-                className={`${card.pillBg} ${card.pillText} text-[10px] tracking-wider uppercase font-display font-bold rounded-full px-2.5 py-1`}
-              >
-                Lens
-              </span>
-            </div>
-            <h3 className="font-display font-black text-2xl md:text-3xl leading-tight tracking-tight mb-3">
-              {card.label}
-            </h3>
-            <p className="text-ink/55 text-sm md:text-base leading-relaxed mb-7 max-w-xs">
-              {card.sub}
-            </p>
-            <span className="inline-flex items-center gap-1.5 text-sm font-display font-bold text-ink group-hover:text-electric transition-colors">
-              {card.cta}
-              <span aria-hidden>→</span>
-            </span>
+            {o.label}
           </button>
-        ))}
-      </div>
-    </motion.div>
+        );
+      })}
+    </div>
   );
 }
 
 /* ── Page component ────────────────────────────────────────── */
 
 export default function LensPage() {
-  const [lens, setLens] = useState<LensMode | null>(null);
+  const [lens, setLens] = useState<LensMode>("artist");
   const [pendingOutput, setPendingOutput] = useState<LensOutput | null>(null);
   const [result, setResult] = useState<LensOutput | null>(null);
   const [loadedFile, setLoadedFile] = useState<string | null>(null);
@@ -307,7 +263,7 @@ export default function LensPage() {
 
   const currentStep: 1 | 2 | 3 = result ? 3 : pendingOutput ? 2 : 1;
   const samples = lens === "artist" ? ARTIST_SAMPLES : TRACK_SAMPLES;
-  const copy = lens ? LENS_COPY[lens] : null;
+  const copy = LENS_COPY[lens];
 
   useEffect(() => {
     if (analyzing) {
@@ -321,20 +277,15 @@ export default function LensPage() {
     }
   }, [analyzing]);
 
-  const selectLens = useCallback((m: LensMode) => {
-    setLens(m);
-    setPendingOutput(null);
-    setResult(null);
-    setLoadedFile(null);
-    setCopied(false);
-  }, []);
-
-  const switchLens = useCallback(() => {
-    setLens(null);
-    setPendingOutput(null);
-    setResult(null);
-    setLoadedFile(null);
-    setCopied(false);
+  const changeLens = useCallback((m: LensMode) => {
+    setLens((prev) => {
+      if (prev === m) return prev;
+      setPendingOutput(null);
+      setResult(null);
+      setLoadedFile(null);
+      setCopied(false);
+      return m;
+    });
   }, []);
 
   const selectFile = useCallback((output: LensOutput) => {
@@ -363,7 +314,7 @@ export default function LensPage() {
   }, []);
 
   const copyDecisionSummary = useCallback(() => {
-    if (!result || !lens) return;
+    if (!result) return;
     const summary = [
       `*${result.decision}*`,
       ``,
@@ -409,59 +360,45 @@ export default function LensPage() {
       </header>
 
       <div className="mx-auto max-w-[1120px] px-6 md:px-10 py-10 md:py-14">
-        {/* ── Hero ── */}
+        {/* ── Hero with inline lens toggle ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-8"
+          className="mb-8 flex items-start justify-between gap-6 flex-wrap"
         >
-          <p className="eyebrow text-ink/40 mb-3">
-            {lens ? copy?.eyebrow : "A guided entry point"}
-          </p>
-          <h1 className="font-display font-black text-4xl md:text-5xl leading-tight tracking-tight mb-3">
-            {lens ? copy?.title : "Artist & Track Lens"}
-          </h1>
-          <p className="text-ink/50 text-lg md:text-xl max-w-xl leading-relaxed">
-            {lens
-              ? copy?.subtitle
-              : "Pick a lens to begin. Each one runs a different read on a different question."}
-          </p>
+          <div className="max-w-xl">
+            <p className="eyebrow text-ink/40 mb-3">{copy.eyebrow}</p>
+            <h1 className="font-display font-black text-4xl md:text-5xl leading-tight tracking-tight mb-3">
+              {copy.title}
+            </h1>
+            <p className="text-ink/50 text-lg md:text-xl leading-relaxed">
+              {copy.subtitle}
+            </p>
+          </div>
+          <div className="pt-1">
+            <LensToggle value={lens} onChange={changeLens} />
+          </div>
         </motion.div>
 
-        {/* ── Lens picker (shown until a lens is selected) ── */}
-        {!lens && <LensPicker onSelect={selectLens} />}
+        {/* ── Step indicator ── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.05, duration: 0.4 }}
+          className="mb-8"
+        >
+          <StepIndicator current={currentStep} />
+        </motion.div>
 
-        {/* ── Demo flow (shown once a lens is selected) ── */}
-        {lens && (
-          <>
-            {/* Switch lens / step indicator row */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.05, duration: 0.4 }}
-              className="mb-8 flex items-center justify-between flex-wrap gap-4"
-            >
-              <StepIndicator current={currentStep} />
-              <button
-                onClick={switchLens}
-                className="text-xs font-medium text-ink/40 hover:text-ink/70 transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M7.5 2.5L4 6l3.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Switch lens
-              </button>
-            </motion.div>
-
-            {/* Main grid */}
-            <motion.div
-              key={lens}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="grid lg:grid-cols-[380px_1fr] gap-8"
-            >
+          {/* Main grid */}
+          <motion.div
+            key={lens}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="grid lg:grid-cols-[380px_1fr] gap-8"
+          >
               {/* ── Left: Sample input ── */}
               <div className="flex flex-col gap-5">
                 <div>
@@ -688,16 +625,14 @@ export default function LensPage() {
                       </div>
                     </motion.div>
                   )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          </>
-        )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
 
         {/* ── Footer strip ── */}
         <div className="mt-12 pt-6 border-t border-ink/8 flex items-center justify-between flex-wrap gap-4">
           <p className="text-[11px] text-ink/20">
-            {lens ? "Add data → Run analysis → Get decision" : "Choose lens → Add data → Get decision"}
+            Add data → Run analysis → Get decision
           </p>
           <a
             href={FULL_TOOL_URL}
