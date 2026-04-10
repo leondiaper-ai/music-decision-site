@@ -137,30 +137,10 @@ export default function ToolCards() {
           })}
         </div>
 
-        {/* Used in practice strip */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-16 rounded-2xl border border-ink/8 bg-cream px-7 py-6"
-        >
-          <p className="eyebrow text-ink/40 mb-4">Used in practice</p>
-          <div className="grid md:grid-cols-3 gap-6 text-sm text-ink/70 leading-relaxed">
-            <p>
-              Used weekly to assess artist and track health across a priority
-              roster — replacing ad-hoc spreadsheet reviews.
-            </p>
-            <p>
-              Campaign timelines built for live releases at a major label,
-              aligning marketing, digital, and commercial teams around one view.
-            </p>
-            <p>
-              YouTube content plans structured around album rollouts — tracking
-              cadence, drops, and execution across 24-week campaigns.
-            </p>
-          </div>
-        </motion.div>
+        {/* Minimal usage footnote — no box, no emphasis */}
+        <p className="mt-10 text-xs text-ink/35">
+          Used weekly to guide artist, track and campaign decisions.
+        </p>
       </div>
     </section>
   );
