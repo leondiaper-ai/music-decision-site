@@ -691,21 +691,110 @@ export default function LensPage() {
           </div>
         </motion.div>
 
+        {/* ── Where this sits in the system ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-20 rounded-3xl border border-ink/10 bg-cream p-8 md:p-12"
+        >
+          <div className="max-w-3xl">
+            <p className="eyebrow text-ink/40 mb-3">Where this sits</p>
+            <h2 className="font-display font-black text-3xl md:text-4xl leading-tight tracking-tight mb-5">
+              This is the first read,
+              <br />
+              <span className="italic font-light text-ink/60">
+                not the whole picture.
+              </span>
+            </h2>
+            <p className="text-ink/60 text-base md:text-lg leading-relaxed mb-3 max-w-2xl">
+              Artist &amp; Track Lens is the first decision layer in a larger system.
+              It answers two questions before any campaign, push, or budget moves:
+            </p>
+            <ul className="space-y-1.5 mb-8">
+              <li className="flex items-start gap-2 text-base md:text-lg text-ink/80 font-medium">
+                <span className="text-signal mt-1 shrink-0">→</span>
+                Is there real momentum?
+              </li>
+              <li className="flex items-start gap-2 text-base md:text-lg text-ink/80 font-medium">
+                <span className="text-signal mt-1 shrink-0">→</span>
+                Is this ready to scale?
+              </li>
+            </ul>
+          </div>
+
+          {/* System flow visual */}
+          <div className="mt-2">
+            <p className="text-[11px] text-ink/30 mb-4 uppercase tracking-widest font-semibold">
+              The decision system
+            </p>
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+              {[
+                { label: "Artist", active: false },
+                { label: "Track", active: true },
+                { label: "Campaign", active: false },
+                { label: "YouTube", active: false },
+                { label: "Decision", active: false, terminal: true },
+              ].map((node, i, arr) => (
+                <div key={node.label} className="flex items-center gap-2 md:gap-3">
+                  <div
+                    className={`
+                      px-3.5 py-2 rounded-xl border text-sm font-display font-bold transition-all
+                      ${
+                        node.active
+                          ? "bg-electric text-paper border-electric shadow-[3px_3px_0_0_rgba(14,14,14,1)]"
+                          : node.terminal
+                          ? "bg-ink text-paper border-ink"
+                          : "bg-paper text-ink/50 border-ink/15"
+                      }
+                    `}
+                  >
+                    {node.label}
+                    {node.active && (
+                      <span className="ml-1.5 text-[10px] font-normal opacity-80">
+                        you are here
+                      </span>
+                    )}
+                  </div>
+                  {i < arr.length - 1 && (
+                    <span
+                      className={`text-base ${
+                        node.active || arr[i + 1].active ? "text-electric" : "text-ink/20"
+                      }`}
+                    >
+                      →
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Positioning line */}
+          <div className="mt-10 pt-6 border-t border-ink/8">
+            <p className="font-display font-bold text-xl md:text-2xl text-ink leading-snug max-w-2xl">
+              This is not a dashboard.
+              <br />
+              <span className="text-electric">It&apos;s the first decision layer.</span>
+            </p>
+          </div>
+        </motion.div>
+
         {/* ── Collapsible "How it works" ── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="mt-20 border-t border-ink/8 pt-10"
+          className="mt-12 border-t border-ink/8 pt-10"
         >
           <button
             onClick={() => setHowItWorksOpen((v) => !v)}
             className="w-full flex items-center justify-between text-left cursor-pointer group"
           >
             <div>
-              <p className="eyebrow text-ink/40 mb-1.5">About this tool</p>
+              <p className="eyebrow text-ink/40 mb-1.5">Under the hood</p>
               <h2 className="font-display font-bold text-2xl text-ink/80 group-hover:text-ink transition-colors">
-                How it works
+                Inputs, signals &amp; outputs
               </h2>
             </div>
             <div
