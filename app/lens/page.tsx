@@ -12,6 +12,8 @@ type LensMode = "artist" | "track";
 
 interface LensOutput {
   filename: string;
+  source: string;
+  includes: string;
   decision: string;
   decisionColor: string;
   why: string;
@@ -22,10 +24,12 @@ interface LensOutput {
 /* Artist-level scenarios — overall artist health & momentum */
 const ARTIST_SAMPLES: LensOutput[] = [
   {
-    filename: "artist_export_compounding_growth.csv",
+    filename: "s4a_artist_growth_spike_v2.csv",
+    source: "Spotify for Artists export · Last 28 days",
+    includes: "Includes: listeners, streams, saves, source of streams",
     decision: "PUSH — Artist is compounding",
     decisionColor: "text-mint",
-    why: "Monthly listeners, follower velocity, and catalogue saves are all rising in lockstep. The whole artist surface is gaining mass — not just a single track.",
+    why: "Listeners, follower velocity, and catalogue saves are all moving together. The whole artist surface is gaining mass — not a single-track spike.",
     actions: [
       "Lean into release cadence — strike while momentum compounds",
       "Brief commercial team — this artist is a priority",
@@ -38,10 +42,12 @@ const ARTIST_SAMPLES: LensOutput[] = [
     ],
   },
   {
-    filename: "artist_export_plateau.csv",
+    filename: "spotify_artist_28d_export_plateau_case.csv",
+    source: "Spotify for Artists export · Last 28 days",
+    includes: "Includes: listeners, streams, saves, source of streams",
     decision: "HOLD — Artist has plateaued",
     decisionColor: "text-signal",
-    why: "Listener base is stable but growth has stalled. Engagement is healthy on the existing audience, but there is no fresh reach or new listener pull.",
+    why: "Growth has stalled. Audience is stable but not expanding — no fresh reach, no new listener pull.",
     actions: [
       "Hold scaling spend until a new growth signal appears",
       "Invest in audience-development content, not push spend",
@@ -54,10 +60,12 @@ const ARTIST_SAMPLES: LensOutput[] = [
     ],
   },
   {
-    filename: "artist_export_emerging.csv",
+    filename: "artist_export_low_reach_high_intent.csv",
+    source: "Spotify for Artists export · Last 28 days",
+    includes: "Includes: listeners, streams, saves, source of streams",
     decision: "TEST — Early signals worth probing",
     decisionColor: "text-sun",
-    why: "Small but real movement on follower velocity and save rate. Not enough to scale, but enough to justify a controlled test before committing budget.",
+    why: "Intent is real but reach is thin. Enough signal to justify a contained test — not enough to commit full budget.",
     actions: [
       "Run a small, contained paid test against the strongest segment",
       "Increase content cadence in the responsive market",
@@ -74,10 +82,12 @@ const ARTIST_SAMPLES: LensOutput[] = [
 /* Track-level scenarios — should this specific track scale */
 const TRACK_SAMPLES: LensOutput[] = [
   {
-    filename: "track_export_strong_intent.csv",
+    filename: "spotify_track_28d_strong_intent.csv",
+    source: "Spotify for Artists export · Last 28 days",
+    includes: "Includes: streams, saves, skip rate, playlist source",
     decision: "PUSH — Track is ready to scale",
     decisionColor: "text-mint",
-    why: "Audience is responding and broadening. Save rate is well above baseline and reach is expanding daily. This is the window to push this track.",
+    why: "Save rate is well above baseline and reach is expanding daily. The track is pulling new listeners, not just retaining old ones.",
     actions: [
       "Scale paid spend on this track now",
       "Increase content cadence to sustain momentum",
@@ -90,10 +100,12 @@ const TRACK_SAMPLES: LensOutput[] = [
     ],
   },
   {
-    filename: "track_export_weak_followthrough.csv",
+    filename: "track_export_weak_followthrough_case.csv",
+    source: "Spotify for Artists export · Last 28 days",
+    includes: "Includes: streams, saves, skip rate, playlist source",
     decision: "HOLD — Not ready to scale yet",
     decisionColor: "text-signal",
-    why: "Strong initial spike but engagement dropped off fast. The audience isn't retaining — spending now would burn budget into a weak window.",
+    why: "Day-one spike, day-three drop. Audience isn't retaining — spend now and you burn budget into a weak window.",
     actions: [
       "Hold all paid spend on this track",
       "Revisit content strategy before the next push",
@@ -106,10 +118,12 @@ const TRACK_SAMPLES: LensOutput[] = [
     ],
   },
   {
-    filename: "track_export_mixed_signals.csv",
+    filename: "track_export_mixed_signals_v3.csv",
+    source: "Spotify for Artists export · Last 28 days",
+    includes: "Includes: streams, saves, skip rate, playlist source",
     decision: "HOLD — Build before you spend",
     decisionColor: "text-sun",
-    why: "Strong intent from the core audience but reach is flattening. The track isn't pulling new listeners yet — scaling now wastes the spend.",
+    why: "Core audience is engaged but reach is flat. The track isn't pulling new listeners — scaling now wastes the spend.",
     actions: [
       "Hold paid push on this track",
       "Focus on content cadence and organic reach",
@@ -123,10 +137,16 @@ const TRACK_SAMPLES: LensOutput[] = [
   },
 ];
 
-const PROCESSING_MESSAGES = [
-  "Analyzing signals…",
-  "Reading audience patterns…",
-  "Generating decision…",
+const PROCESSING_MESSAGES_ARTIST = [
+  "Parsing Spotify export…",
+  "Calculating listener depth (SPL)…",
+  "Evaluating growth vs baseline…",
+];
+
+const PROCESSING_MESSAGES_TRACK = [
+  "Parsing Spotify export…",
+  "Calculating save rate + retention curve…",
+  "Evaluating reach vs baseline…",
 ];
 
 /* ── Lens copy ─────────────────────────────────────────────── */
@@ -146,7 +166,7 @@ const LENS_COPY: Record<LensMode, {
     eyebrow: "Artist Lens · Growth & Health",
     subtitle: "This is what a real decision looks like.",
     toggleContext: "Evaluating artist-level momentum and growth",
-    primaryCta: "Analyse your artist →",
+    primaryCta: "Run analysis on your own export →",
     sampleEyebrow: "Sample artist data",
     sampleHelp: "Each file represents a different artist health scenario.",
     emptyHelper: "Select an artist sample to begin",
@@ -156,7 +176,7 @@ const LENS_COPY: Record<LensMode, {
     eyebrow: "Track Lens · Scale Decision",
     subtitle: "Should this track scale right now?",
     toggleContext: "Evaluating track-level scale readiness",
-    primaryCta: "Analyse your track →",
+    primaryCta: "Upload your data → get decision",
     sampleEyebrow: "Example scenarios",
     sampleHelp: "Each file represents a different track scenario.",
     emptyHelper: "Select a track sample to begin",
@@ -267,19 +287,21 @@ export default function LensPage() {
 
   const currentStep: 1 | 2 | 3 = result ? 3 : pendingOutput ? 2 : 1;
   const samples = lens === "artist" ? ARTIST_SAMPLES : TRACK_SAMPLES;
+  const processingMessages =
+    lens === "artist" ? PROCESSING_MESSAGES_ARTIST : PROCESSING_MESSAGES_TRACK;
   const copy = LENS_COPY[lens];
 
   useEffect(() => {
     if (analyzing) {
       setProcessingMsg(0);
       msgInterval.current = setInterval(() => {
-        setProcessingMsg((prev) => (prev + 1) % PROCESSING_MESSAGES.length);
-      }, 400);
+        setProcessingMsg((prev) => (prev + 1) % processingMessages.length);
+      }, 500);
       return () => {
         if (msgInterval.current) clearInterval(msgInterval.current);
       };
     }
-  }, [analyzing]);
+  }, [analyzing, processingMessages.length]);
 
   const changeLens = useCallback((m: LensMode) => {
     setLens((prev) => {
@@ -303,7 +325,8 @@ export default function LensPage() {
     if (!pendingOutput) return;
     setAnalyzing(true);
     setResult(null);
-    const duration = 800 + Math.random() * 400;
+    // ~1.5s total lets the 3 processing messages cycle at 500ms each
+    const duration = 1500;
     setTimeout(() => {
       setAnalyzing(false);
       setResult(pendingOutput);
@@ -431,7 +454,7 @@ export default function LensPage() {
                         key={s.filename}
                         onClick={() => selectFile(s)}
                         className={`
-                          group flex items-center gap-2.5 px-3.5 py-3
+                          group flex items-start gap-2.5 px-3.5 py-3
                           rounded-xl text-left
                           border transition-all cursor-pointer
                           ${
@@ -441,14 +464,22 @@ export default function LensPage() {
                           }
                         `}
                       >
-                        <span className="shrink-0 text-ink/25 text-xs">
+                        <span className="shrink-0 text-ink/25 text-xs mt-0.5">
                           <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M1 1.5h7.5L12.5 5.5v9a1 1 0 01-1 1h-9.5a1 1 0 01-1-1v-13a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" />
                             <path d="M8.5 1.5v4h4" stroke="currentColor" strokeWidth="1.2" />
                           </svg>
                         </span>
-                        <span className="font-mono text-[13px] text-ink/60 group-hover:text-ink/80 transition-colors truncate">
-                          {s.filename}
+                        <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                          <span className="font-mono text-[12px] text-ink/65 group-hover:text-ink/85 transition-colors truncate">
+                            {s.filename}
+                          </span>
+                          <span className="text-[10px] text-ink/30 leading-snug">
+                            {s.source}
+                          </span>
+                          <span className="text-[10px] text-ink/25 leading-snug">
+                            {s.includes}
+                          </span>
                         </span>
                       </button>
                     ))}
@@ -483,7 +514,7 @@ export default function LensPage() {
                         {analyzing ? (
                           <span className="flex items-center justify-center gap-2">
                             <span className="inline-block w-4 h-4 border-2 border-paper/30 border-t-paper rounded-full animate-spin" />
-                            {PROCESSING_MESSAGES[processingMsg]}
+                            {processingMessages[processingMsg]}
                           </span>
                         ) : (
                           "Run analysis →"
@@ -510,7 +541,7 @@ export default function LensPage() {
                       {copy.primaryCta}
                     </a>
                     <p className="text-[11px] text-ink/40 leading-relaxed -mt-0.5 px-1">
-                      Upload your own Spotify or campaign data to get a real decision
+                      Drop in your own Spotify for Artists export to get a real decision
                     </p>
                     <button
                       onClick={resetAll}
@@ -541,7 +572,7 @@ export default function LensPage() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.2 }}
                         >
-                          {PROCESSING_MESSAGES[processingMsg]}
+                          {processingMessages[processingMsg]}
                         </motion.span>
                       </div>
                     </motion.div>
@@ -556,7 +587,7 @@ export default function LensPage() {
                     >
                       {/* DECISION */}
                       <div className="mb-6 pb-6 border-b border-ink/8">
-                        <div className="eyebrow text-ink/30 mb-2">Decision</div>
+                        <div className="eyebrow text-ink/30 mb-2">Engine result</div>
                         <div className={`font-display font-black text-3xl md:text-4xl leading-tight tracking-tight ${result.decisionColor}`}>
                           {result.decision}
                         </div>
@@ -596,8 +627,13 @@ export default function LensPage() {
                         </ul>
                       </div>
 
+                      {/* SYSTEM SIGNAL — reinforces that the decision is systematic */}
+                      <p className="mt-5 pt-4 border-t border-ink/6 text-[10px] tracking-[0.14em] uppercase font-mono text-ink/30">
+                        Based on 28d performance vs baseline patterns
+                      </p>
+
                       {/* Bottom action row */}
-                      <div className="mt-6 pt-5 border-t border-ink/6 flex items-center gap-4 flex-wrap">
+                      <div className="mt-5 pt-4 border-t border-ink/6 flex items-center gap-4 flex-wrap">
                         <button
                           onClick={copyDecisionSummary}
                           className="inline-flex items-center gap-2 text-sm font-medium text-ink/40 hover:text-ink/70 transition-colors cursor-pointer"
