@@ -91,7 +91,7 @@ const TRACK_SAMPLES: LensOutput[] = [
   },
   {
     filename: "track_export_weak_followthrough.csv",
-    decision: "HOLD — Track is not ready to scale",
+    decision: "HOLD — Not ready to scale yet",
     decisionColor: "text-signal",
     why: "Strong initial spike but engagement dropped off fast. The audience isn't retaining — spending now would burn budget into a weak window.",
     actions: [
@@ -154,10 +154,10 @@ const LENS_COPY: Record<LensMode, {
   track: {
     title: "Track Lens",
     eyebrow: "Track Lens · Scale Decision",
-    subtitle: "This is what a real decision looks like.",
+    subtitle: "Should this track scale right now?",
     toggleContext: "Evaluating track-level scale readiness",
     primaryCta: "Analyse your track →",
-    sampleEyebrow: "Sample track data",
+    sampleEyebrow: "Example scenarios",
     sampleHelp: "Each file represents a different track scenario.",
     emptyHelper: "Select a track sample to begin",
   },
@@ -496,6 +496,9 @@ export default function LensPage() {
                     >
                       {copy.primaryCta}
                     </a>
+                    <p className="text-[11px] text-ink/40 leading-relaxed -mt-0.5 px-1">
+                      Upload your own Spotify or campaign data to get a real decision
+                    </p>
                     <button
                       onClick={resetAll}
                       className="w-full py-2.5 rounded-xl border border-ink/12 text-sm font-medium text-ink/50 hover:border-ink/25 hover:text-ink/70 transition-all cursor-pointer"
