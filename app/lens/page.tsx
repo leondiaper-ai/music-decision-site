@@ -343,7 +343,7 @@ export default function LensPage() {
                   rel="noreferrer noopener"
                   className="w-full py-3.5 rounded-xl bg-ink text-paper font-display font-bold text-sm tracking-wide text-center transition-all cursor-pointer shadow-[3px_3px_0_0_rgba(44,37,255,1)] hover:shadow-[2px_2px_0_0_rgba(44,37,255,1)] hover:translate-x-[1px] hover:translate-y-[1px]"
                 >
-                  Use full tool with your own data →
+                  Run this on your own data →
                 </a>
                 <button
                   onClick={resetAll}
@@ -458,7 +458,7 @@ export default function LensPage() {
                       rel="noreferrer noopener"
                       className="inline-flex items-center gap-1.5 text-sm font-bold text-electric hover:text-electric/80 transition-colors"
                     >
-                      Use full tool with your own data
+                      Run this on your own data
                       <span>→</span>
                     </a>
                   </div>
@@ -485,12 +485,60 @@ export default function LensPage() {
           </div>
         </motion.div>
 
+        {/* ── Artist Health Decision Engine — explains what just happened ── */}
+        <AnimatePresence>
+          {result && (
+            <motion.div
+              key="engine-card"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-12 rounded-3xl bg-cream border border-ink/10 p-8 md:p-10 shadow-[8px_8px_0_0_rgba(14,14,14,1)]"
+            >
+              <p className="text-[11px] tracking-[0.18em] uppercase font-semibold text-ink/40 mb-3">
+                Under the read
+              </p>
+              <h2 className="font-display font-black text-2xl md:text-3xl leading-tight tracking-tight mb-3">
+                Artist Health
+                <br />
+                <span className="italic font-light text-ink/70">Decision Engine</span>
+              </h2>
+              <p className="text-sm md:text-base text-ink/55 leading-relaxed max-w-xl mb-7">
+                Every decision is built from three steps. You just saw the full loop.
+              </p>
+
+              {/* Engine flow: Artist → Signals → Decision */}
+              <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                {[
+                  { label: "Artist", accent: "bg-electric text-paper" },
+                  { label: "Signals", accent: "bg-sun text-ink" },
+                  { label: "Decision", accent: "bg-signal text-paper" },
+                ].map((node, i, arr) => (
+                  <div key={node.label} className="flex items-center gap-2 md:gap-3">
+                    <div
+                      className={`${node.accent} px-4 md:px-5 py-2.5 rounded-full font-display font-bold text-sm md:text-base shadow-[3px_3px_0_0_rgba(14,14,14,1)]`}
+                    >
+                      {node.label}
+                    </div>
+                    {i < arr.length - 1 && (
+                      <span className="text-ink/30 text-xl md:text-2xl select-none" aria-hidden>
+                        →
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* ── Compact "Where this sits" ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-14 rounded-2xl border border-ink/10 bg-cream/70 px-6 md:px-8 py-6"
+          className="mt-10 rounded-2xl border border-ink/10 bg-cream/70 px-6 md:px-8 py-6"
         >
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-md">
@@ -557,7 +605,7 @@ export default function LensPage() {
             rel="noreferrer noopener"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-electric hover:text-electric/80 transition-colors"
           >
-            Use full tool with your own data
+            Run this on your own data
             <span>→</span>
           </a>
         </div>
