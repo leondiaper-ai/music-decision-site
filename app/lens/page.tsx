@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, type DragEvent } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+
+const FULL_TOOL_URL = "https://pih-v2.vercel.app/label";
 
 /* ── Data model ────────────────────────────────────────────── */
 
@@ -66,34 +68,11 @@ const SAMPLES: LensOutput[] = [
   },
 ];
 
-/* ── Rotating processing messages ─────────────────────────── */
-
 const PROCESSING_MESSAGES = [
   "Analyzing signals…",
   "Reading audience patterns…",
   "Generating decision…",
 ];
-
-/* ── CSV classifier ────────────────────────────────────────── */
-
-function classifyCSV(text: string, name: string): LensOutput {
-  const lower = text.toLowerCase();
-  const hasSaveHigh =
-    lower.includes("save") &&
-    (lower.includes("high") || lower.includes("above") || lower.includes("strong"));
-  const hasReachWeak =
-    lower.includes("reach") &&
-    (lower.includes("flat") || lower.includes("low") || lower.includes("declining"));
-  const hasDropOff =
-    lower.includes("drop") || lower.includes("spike") || lower.includes("skip");
-  const hasGrowth =
-    lower.includes("growth") &&
-    (lower.includes("rising") || lower.includes("expanding") || lower.includes("up"));
-
-  if (hasSaveHigh && hasGrowth && !hasReachWeak) return { ...SAMPLES[0], filename: name };
-  if (hasDropOff && !hasSaveHigh) return { ...SAMPLES[1], filename: name };
-  return { ...SAMPLES[2], filename: name };
-}
 
 /* ── Step indicator ────────────────────────────────────────── */
 
@@ -146,63 +125,19 @@ function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
   );
 }
 
-/* ── Mode toggle ───────────────────────────────────────────── */
-
-type Mode = "sample" | "own";
-
-function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
-  return (
-    <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-cream border border-ink/10">
-      <button
-        onClick={() => onChange("sample")}
-        className={`
-          px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer
-          ${
-            mode === "sample"
-              ? "bg-paper text-ink shadow-[2px_2px_0_0_rgba(14,14,14,1)] border border-ink/15"
-              : "text-ink/40 hover:text-ink/60"
-          }
-        `}
-      >
-        Try with sample data
-      </button>
-      <button
-        onClick={() => onChange("own")}
-        className={`
-          px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer
-          ${
-            mode === "own"
-              ? "bg-paper text-ink shadow-[2px_2px_0_0_rgba(14,14,14,1)] border border-ink/15"
-              : "text-ink/40 hover:text-ink/60"
-          }
-        `}
-      >
-        Use your own data
-      </button>
-    </div>
-  );
-}
-
 /* ── Page component ────────────────────────────────────────── */
 
 export default function LensPage() {
-  const [mode, setMode] = useState<Mode>("sample");
   const [pendingOutput, setPendingOutput] = useState<LensOutput | null>(null);
   const [result, setResult] = useState<LensOutput | null>(null);
   const [loadedFile, setLoadedFile] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [processingMsg, setProcessingMsg] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [artistName, setArtistName] = useState("");
-  const [trackTitle, setTrackTitle] = useState("");
-  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const msgInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentStep: 1 | 2 | 3 = result ? 3 : pendingOutput ? 2 : 1;
 
-  // Rotate processing messages
   useEffect(() => {
     if (analyzing) {
       setProcessingMsg(0);
@@ -233,85 +168,33 @@ export default function LensPage() {
     }, duration);
   }, [pendingOutput]);
 
-  const handleFile = useCallback(
-    (file: File) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const text = ev.target?.result as string;
-        selectFile(classifyCSV(text, file.name));
-      };
-      reader.readAsText(file);
-    },
-    [selectFile]
-  );
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      setDragging(false);
-      const file = e.dataTransfer.files?.[0];
-      if (file) handleFile(file);
-    },
-    [handleFile]
-  );
-
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    setDragging(false);
-  }, []);
-
   const resetAll = useCallback(() => {
     setPendingOutput(null);
     setResult(null);
     setLoadedFile(null);
     setCopied(false);
-    setArtistName("");
-    setTrackTitle("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
-
-  const switchMode = useCallback(
-    (m: Mode) => {
-      if (m === mode) return;
-      setMode(m);
-      resetAll();
-    },
-    [mode, resetAll]
-  );
 
   const copyDecisionSummary = useCallback(() => {
     if (!result) return;
-    const header =
-      mode === "own" && (artistName || trackTitle)
-        ? `*${[artistName, trackTitle].filter(Boolean).join(" — ")}*\n\n`
-        : "";
-    const summary =
-      header +
-      [
-        `*${result.decision}*`,
-        ``,
-        `${result.why}`,
-        ``,
-        `*What to do next:*`,
-        ...result.actions.map((a) => `→ ${a}`),
-        ``,
-        `_Signals: ${result.signals.join(" · ")}_`,
-        ``,
-        `— Artist & Track Lens`,
-      ].join("\n");
+    const summary = [
+      `*${result.decision}*`,
+      ``,
+      `${result.why}`,
+      ``,
+      `*What to do next:*`,
+      ...result.actions.map((a) => `→ ${a}`),
+      ``,
+      `_Signals: ${result.signals.join(" · ")}_`,
+      ``,
+      `— Artist & Track Lens`,
+    ].join("\n");
 
     navigator.clipboard.writeText(summary).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  }, [result, mode, artistName, trackTitle]);
-
-  const canRun =
-    pendingOutput !== null && (mode === "sample" || loadedFile !== null);
+  }, [result]);
 
   return (
     <div className="min-h-screen bg-paper">
@@ -346,22 +229,22 @@ export default function LensPage() {
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="mb-8"
         >
+          <p className="eyebrow text-ink/40 mb-3">A guided entry point</p>
           <h1 className="font-display font-black text-4xl md:text-5xl leading-tight tracking-tight mb-3">
             Artist &amp; Track Lens
           </h1>
           <p className="text-ink/50 text-lg md:text-xl max-w-xl leading-relaxed">
-            Drop in messy CSVs. Get a clear decision.
+            Try it with sample data. See how the tool turns messy CSVs into a clear decision.
           </p>
         </motion.div>
 
-        {/* ── Mode toggle + step indicator ── */}
+        {/* ── Step indicator ── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15, duration: 0.5 }}
-          className="mb-8 flex flex-wrap items-center justify-between gap-4"
+          className="mb-8"
         >
-          <ModeToggle mode={mode} onChange={switchMode} />
           <StepIndicator current={currentStep} />
         </motion.div>
 
@@ -372,149 +255,48 @@ export default function LensPage() {
           transition={{ delay: 0.2, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="grid lg:grid-cols-[380px_1fr] gap-8"
         >
-          {/* ── Left: Input column ── */}
+          {/* ── Left: Sample input ── */}
           <div className="flex flex-col gap-5">
-            <AnimatePresence mode="wait">
-              {mode === "sample" ? (
-                /* ─── Sample mode ─── */
-                <motion.div
-                  key="sample-input"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <p className="text-[11px] text-ink/30 mb-3 uppercase tracking-widest font-semibold">
-                    Sample files
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {SAMPLES.map((s) => (
-                      <button
-                        key={s.filename}
-                        onClick={() => selectFile(s)}
-                        className={`
-                          group flex items-center gap-2.5 px-3.5 py-3
-                          rounded-xl text-left
-                          border transition-all cursor-pointer
-                          ${
-                            loadedFile === s.filename
-                              ? "border-electric/30 bg-electric/5"
-                              : "border-ink/10 bg-cream hover:border-ink/25"
-                          }
-                        `}
-                      >
-                        <span className="shrink-0 text-ink/25 text-xs">
-                          <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1 1.5h7.5L12.5 5.5v9a1 1 0 01-1 1h-9.5a1 1 0 01-1-1v-13a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" />
-                            <path d="M8.5 1.5v4h4" stroke="currentColor" strokeWidth="1.2" />
-                          </svg>
-                        </span>
-                        <span className="font-mono text-[13px] text-ink/60 group-hover:text-ink/80 transition-colors truncate">
-                          {s.filename}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-ink/25 mt-3 leading-relaxed">
-                    Select a file to load. Each represents a different track scenario.
-                  </p>
-                </motion.div>
-              ) : (
-                /* ─── Own data mode ─── */
-                <motion.div
-                  key="own-input"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.25 }}
-                  className="flex flex-col gap-4"
-                >
-                  {/* Artist + track inputs */}
-                  <div className="flex flex-col gap-3">
-                    <div>
-                      <label className="block text-[11px] text-ink/40 mb-1.5 uppercase tracking-widest font-semibold">
-                        Artist name
-                      </label>
-                      <input
-                        type="text"
-                        value={artistName}
-                        onChange={(e) => setArtistName(e.target.value)}
-                        placeholder="e.g. K Trap"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-ink/12 bg-cream text-sm text-ink/80 placeholder:text-ink/25 focus:outline-none focus:border-electric/40 focus:bg-paper transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-ink/40 mb-1.5 uppercase tracking-widest font-semibold">
-                        Track title <span className="text-ink/20 normal-case font-normal">(optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={trackTitle}
-                        onChange={(e) => setTrackTitle(e.target.value)}
-                        placeholder="e.g. Single name"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-ink/12 bg-cream text-sm text-ink/80 placeholder:text-ink/25 focus:outline-none focus:border-electric/40 focus:bg-paper transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Drop zone */}
-                  <div
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onClick={() => fileInputRef.current?.click()}
+            <div>
+              <p className="text-[11px] text-ink/30 mb-3 uppercase tracking-widest font-semibold">
+                Try with sample data
+              </p>
+              <div className="flex flex-col gap-2">
+                {SAMPLES.map((s) => (
+                  <button
+                    key={s.filename}
+                    onClick={() => selectFile(s)}
                     className={`
-                      rounded-2xl border-2 border-dashed cursor-pointer
-                      flex flex-col items-center justify-center
-                      py-10 px-6 text-center transition-all
-                      ${dragging ? "border-electric bg-electric/5" : "border-ink/15 bg-cream hover:border-ink/30"}
+                      group flex items-center gap-2.5 px-3.5 py-3
+                      rounded-xl text-left
+                      border transition-all cursor-pointer
+                      ${
+                        loadedFile === s.filename
+                          ? "border-electric/30 bg-electric/5"
+                          : "border-ink/10 bg-cream hover:border-ink/25"
+                      }
                     `}
                   >
-                    {loadedFile && !analyzing ? (
-                      <>
-                        <div className="text-lg mb-1 opacity-30">✓</div>
-                        <p className="text-sm text-ink/50 leading-relaxed">
-                          <span className="font-mono text-ink/70">{loadedFile}</span>
-                        </p>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            resetAll();
-                          }}
-                          className="mt-2 text-xs text-ink/30 hover:text-ink/50 transition-colors cursor-pointer"
-                        >
-                          Clear &amp; start over
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-2xl mb-2 opacity-40">↓</div>
-                        <p className="text-sm text-ink/50 leading-relaxed">
-                          Drop a Spotify CSV — or click to browse
-                        </p>
-                        <p className="text-[11px] text-ink/25 mt-1.5">
-                          .csv from Spotify for Artists, Chartmetric, etc.
-                        </p>
-                      </>
-                    )}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".csv,text/csv"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleFile(file);
-                      }}
-                      className="hidden"
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <span className="shrink-0 text-ink/25 text-xs">
+                      <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1.5h7.5L12.5 5.5v9a1 1 0 01-1 1h-9.5a1 1 0 01-1-1v-13a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" />
+                        <path d="M8.5 1.5v4h4" stroke="currentColor" strokeWidth="1.2" />
+                      </svg>
+                    </span>
+                    <span className="font-mono text-[13px] text-ink/60 group-hover:text-ink/80 transition-colors truncate">
+                      {s.filename}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-ink/25 mt-3 leading-relaxed">
+                Each file represents a different track scenario.
+              </p>
+            </div>
 
             {/* Run analysis button */}
             <AnimatePresence>
-              {canRun && !result && (
+              {pendingOutput && !result && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -547,21 +329,33 @@ export default function LensPage() {
               )}
             </AnimatePresence>
 
-            {/* Run another after result */}
+            {/* After-result actions */}
             {result && (
-              <motion.button
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                onClick={resetAll}
-                className="w-full py-3 rounded-xl border border-ink/12 text-sm font-medium text-ink/50 hover:border-ink/25 hover:text-ink/70 transition-all cursor-pointer"
+                className="flex flex-col gap-2.5"
               >
-                Run another analysis
-              </motion.button>
+                <a
+                  href={FULL_TOOL_URL}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="w-full py-3.5 rounded-xl bg-ink text-paper font-display font-bold text-sm tracking-wide text-center transition-all cursor-pointer shadow-[3px_3px_0_0_rgba(44,37,255,1)] hover:shadow-[2px_2px_0_0_rgba(44,37,255,1)] hover:translate-x-[1px] hover:translate-y-[1px]"
+                >
+                  Use full tool with your own data →
+                </a>
+                <button
+                  onClick={resetAll}
+                  className="w-full py-2.5 rounded-xl border border-ink/12 text-sm font-medium text-ink/50 hover:border-ink/25 hover:text-ink/70 transition-all cursor-pointer"
+                >
+                  Try another sample
+                </button>
+              </motion.div>
             )}
           </div>
 
-          {/* ── Right: Output column (identical in both modes) ── */}
+          {/* ── Right: Output panel ── */}
           <div className="min-h-[400px] flex items-stretch">
             <AnimatePresence mode="wait">
               {analyzing ? (
@@ -593,13 +387,6 @@ export default function LensPage() {
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   className="flex-1 rounded-2xl border border-ink/10 bg-cream p-7 md:p-9 flex flex-col"
                 >
-                  {/* Optional context line for own-data mode */}
-                  {mode === "own" && (artistName || trackTitle) && (
-                    <div className="mb-4 text-xs text-ink/35 font-mono">
-                      {[artistName, trackTitle].filter(Boolean).join(" — ")}
-                    </div>
-                  )}
-
                   {/* DECISION */}
                   <div className="mb-6 pb-6 border-b border-ink/8">
                     <div className="eyebrow text-ink/30 mb-2">Decision</div>
@@ -630,7 +417,7 @@ export default function LensPage() {
                   </div>
 
                   {/* SUPPORTING SIGNALS */}
-                  <div className="mt-auto pt-5 border-t border-ink/6">
+                  <div className="pt-5 border-t border-ink/6">
                     <div className="eyebrow text-ink/20 mb-2">Supporting signals</div>
                     <ul className="space-y-1">
                       {result.signals.map((sig) => (
@@ -642,8 +429,8 @@ export default function LensPage() {
                     </ul>
                   </div>
 
-                  {/* COPY BUTTON */}
-                  <div className="mt-6 pt-5 border-t border-ink/6">
+                  {/* Bottom action row */}
+                  <div className="mt-6 pt-5 border-t border-ink/6 flex items-center justify-between gap-4 flex-wrap">
                     <button
                       onClick={copyDecisionSummary}
                       className="inline-flex items-center gap-2 text-sm font-medium text-ink/40 hover:text-ink/70 transition-colors cursor-pointer"
@@ -665,6 +452,15 @@ export default function LensPage() {
                         </>
                       )}
                     </button>
+                    <a
+                      href={FULL_TOOL_URL}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="inline-flex items-center gap-1.5 text-sm font-bold text-electric hover:text-electric/80 transition-colors"
+                    >
+                      Use full tool with your own data
+                      <span>→</span>
+                    </a>
                   </div>
                 </motion.div>
               ) : (
@@ -680,9 +476,7 @@ export default function LensPage() {
                     <p className="text-sm text-ink/25">
                       {pendingOutput
                         ? "Ready — hit Run analysis"
-                        : mode === "sample"
-                        ? "Select a sample file to begin"
-                        : "Drop a CSV to begin"}
+                        : "Select a sample file to begin"}
                     </p>
                   </div>
                 </motion.div>
@@ -691,44 +485,30 @@ export default function LensPage() {
           </div>
         </motion.div>
 
-        {/* ── Where this sits in the system ── */}
+        {/* ── Compact "Where this sits" ── */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-20 rounded-3xl border border-ink/10 bg-cream p-8 md:p-12"
+          transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-14 rounded-2xl border border-ink/10 bg-cream/70 px-6 md:px-8 py-6"
         >
-          <div className="max-w-3xl">
-            <p className="eyebrow text-ink/40 mb-3">Where this sits</p>
-            <h2 className="font-display font-black text-3xl md:text-4xl leading-tight tracking-tight mb-5">
-              This is the first read,
-              <br />
-              <span className="italic font-light text-ink/60">
-                not the whole picture.
-              </span>
-            </h2>
-            <p className="text-ink/60 text-base md:text-lg leading-relaxed mb-3 max-w-2xl">
-              Artist &amp; Track Lens is the first decision layer in a larger system.
-              It answers two questions before any campaign, push, or budget moves:
-            </p>
-            <ul className="space-y-1.5 mb-8">
-              <li className="flex items-start gap-2 text-base md:text-lg text-ink/80 font-medium">
-                <span className="text-signal mt-1 shrink-0">→</span>
-                Is there real momentum?
-              </li>
-              <li className="flex items-start gap-2 text-base md:text-lg text-ink/80 font-medium">
-                <span className="text-signal mt-1 shrink-0">→</span>
-                Is this ready to scale?
-              </li>
-            </ul>
-          </div>
+          <div className="flex flex-wrap items-start justify-between gap-6">
+            <div className="max-w-md">
+              <p className="eyebrow text-ink/40 mb-2">Where this sits</p>
+              <p className="text-sm text-ink/65 leading-relaxed">
+                Artist &amp; Track Lens is the first read in a larger system.
+                It answers two questions before any campaign or budget moves:{" "}
+                <span className="text-ink/85 font-medium">
+                  is there real momentum, and is this ready to scale?
+                </span>
+              </p>
+              <p className="font-display font-bold text-sm text-ink mt-3">
+                Not a dashboard. <span className="text-electric">The first decision layer.</span>
+              </p>
+            </div>
 
-          {/* System flow visual */}
-          <div className="mt-2">
-            <p className="text-[11px] text-ink/30 mb-4 uppercase tracking-widest font-semibold">
-              The decision system
-            </p>
-            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+            {/* Compact system flow */}
+            <div className="flex items-center gap-1.5 flex-wrap">
               {[
                 { label: "Artist", active: false },
                 { label: "Track", active: true },
@@ -736,29 +516,24 @@ export default function LensPage() {
                 { label: "YouTube", active: false },
                 { label: "Decision", active: false, terminal: true },
               ].map((node, i, arr) => (
-                <div key={node.label} className="flex items-center gap-2 md:gap-3">
+                <div key={node.label} className="flex items-center gap-1.5">
                   <div
                     className={`
-                      px-3.5 py-2 rounded-xl border text-sm font-display font-bold transition-all
+                      px-2.5 py-1 rounded-lg border text-[11px] font-display font-bold transition-all
                       ${
                         node.active
-                          ? "bg-electric text-paper border-electric shadow-[3px_3px_0_0_rgba(14,14,14,1)]"
+                          ? "bg-electric text-paper border-electric"
                           : node.terminal
                           ? "bg-ink text-paper border-ink"
-                          : "bg-paper text-ink/50 border-ink/15"
+                          : "bg-paper text-ink/45 border-ink/15"
                       }
                     `}
                   >
                     {node.label}
-                    {node.active && (
-                      <span className="ml-1.5 text-[10px] font-normal opacity-80">
-                        you are here
-                      </span>
-                    )}
                   </div>
                   {i < arr.length - 1 && (
                     <span
-                      className={`text-base ${
+                      className={`text-xs ${
                         node.active || arr[i + 1].active ? "text-electric" : "text-ink/20"
                       }`}
                     >
@@ -769,102 +544,20 @@ export default function LensPage() {
               ))}
             </div>
           </div>
-
-          {/* Positioning line */}
-          <div className="mt-10 pt-6 border-t border-ink/8">
-            <p className="font-display font-bold text-xl md:text-2xl text-ink leading-snug max-w-2xl">
-              This is not a dashboard.
-              <br />
-              <span className="text-electric">It&apos;s the first decision layer.</span>
-            </p>
-          </div>
-        </motion.div>
-
-        {/* ── Collapsible "How it works" ── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="mt-12 border-t border-ink/8 pt-10"
-        >
-          <button
-            onClick={() => setHowItWorksOpen((v) => !v)}
-            className="w-full flex items-center justify-between text-left cursor-pointer group"
-          >
-            <div>
-              <p className="eyebrow text-ink/40 mb-1.5">Under the hood</p>
-              <h2 className="font-display font-bold text-2xl text-ink/80 group-hover:text-ink transition-colors">
-                Inputs, signals &amp; outputs
-              </h2>
-            </div>
-            <div
-              className={`w-9 h-9 rounded-full border border-ink/15 flex items-center justify-center text-ink/40 group-hover:border-ink/30 group-hover:text-ink/60 transition-all ${
-                howItWorksOpen ? "rotate-180" : ""
-              }`}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M3 5l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </button>
-
-          <AnimatePresence>
-            {howItWorksOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="overflow-hidden"
-              >
-                <div className="grid md:grid-cols-3 gap-6 mt-6 pt-2">
-                  <div>
-                    <div className="eyebrow text-ink/30 mb-2">Inputs</div>
-                    <ul className="text-sm text-ink/60 space-y-1.5 leading-relaxed">
-                      <li>— Raw Spotify / streaming exports</li>
-                      <li>— Noisy performance signals</li>
-                      <li>— Mixed time windows</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <div className="eyebrow text-ink/30 mb-2">What it reads</div>
-                    <ul className="text-sm text-ink/60 space-y-1.5 leading-relaxed">
-                      <li>— Save and skip patterns</li>
-                      <li>— Reach trajectory</li>
-                      <li>— Listener-to-follower conversion</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <div className="eyebrow text-ink/30 mb-2">Outputs</div>
-                    <ul className="text-sm text-ink/60 space-y-1.5 leading-relaxed">
-                      <li>→ Clear health status</li>
-                      <li>→ What's actually happening</li>
-                      <li>→ What to do next</li>
-                    </ul>
-                  </div>
-                </div>
-                <p className="text-sm text-ink/50 leading-relaxed mt-8 max-w-2xl">
-                  Most teams already have the data. They just don't have a shared way
-                  to interpret signals and act on them consistently. This tool removes
-                  the interpretation step and gives you a next move.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
 
         {/* ── Footer strip ── */}
-        <div className="mt-16 pt-6 border-t border-ink/8 flex items-center justify-between">
+        <div className="mt-10 pt-6 border-t border-ink/8 flex items-center justify-between flex-wrap gap-4">
           <p className="text-[11px] text-ink/20">
             Add data → Run analysis → Get decision
           </p>
           <a
-            href="https://pih-v2.vercel.app/label"
+            href={FULL_TOOL_URL}
             target="_blank"
             rel="noreferrer noopener"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-electric hover:text-electric/80 transition-colors"
           >
-            View detailed breakdown
+            Use full tool with your own data
             <span>→</span>
           </a>
         </div>
