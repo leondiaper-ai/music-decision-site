@@ -135,6 +135,8 @@ const LENS_COPY: Record<LensMode, {
   title: string;
   eyebrow: string;
   subtitle: string;
+  toggleContext: string;
+  primaryCta: string;
   sampleEyebrow: string;
   sampleHelp: string;
   emptyHelper: string;
@@ -142,18 +144,20 @@ const LENS_COPY: Record<LensMode, {
   artist: {
     title: "Artist Lens",
     eyebrow: "Artist Lens · Growth & Health",
-    subtitle:
-      "Try it with sample artist data. See how the tool reads overall health and tells you whether the artist is ready to push.",
-    sampleEyebrow: "Try with sample artist data",
+    subtitle: "This is what a real decision looks like.",
+    toggleContext: "Evaluating artist-level momentum and growth",
+    primaryCta: "Analyse your artist →",
+    sampleEyebrow: "Sample artist data",
     sampleHelp: "Each file represents a different artist health scenario.",
     emptyHelper: "Select an artist sample to begin",
   },
   track: {
     title: "Track Lens",
     eyebrow: "Track Lens · Scale Decision",
-    subtitle:
-      "Try it with sample track data. See how the tool decides whether a specific track should scale, hold, or wait.",
-    sampleEyebrow: "Try with sample track data",
+    subtitle: "This is what a real decision looks like.",
+    toggleContext: "Evaluating track-level scale readiness",
+    primaryCta: "Analyse your track →",
+    sampleEyebrow: "Sample track data",
     sampleHelp: "Each file represents a different track scenario.",
     emptyHelper: "Select a track sample to begin",
   },
@@ -376,8 +380,11 @@ export default function LensPage() {
               {copy.subtitle}
             </p>
           </div>
-          <div className="pt-1">
+          <div className="pt-1 flex flex-col items-start md:items-end gap-2">
             <LensToggle value={lens} onChange={changeLens} />
+            <p className="text-[11px] text-ink/40 leading-none">
+              {copy.toggleContext}
+            </p>
           </div>
         </motion.div>
 
@@ -487,7 +494,7 @@ export default function LensPage() {
                       rel="noreferrer noopener"
                       className="w-full py-3.5 rounded-xl bg-ink text-paper font-display font-bold text-sm tracking-wide text-center transition-all cursor-pointer shadow-[3px_3px_0_0_rgba(44,37,255,1)] hover:shadow-[2px_2px_0_0_rgba(44,37,255,1)] hover:translate-x-[1px] hover:translate-y-[1px]"
                     >
-                      Run this on your own data →
+                      {copy.primaryCta}
                     </a>
                     <button
                       onClick={resetAll}
@@ -574,7 +581,7 @@ export default function LensPage() {
                       </div>
 
                       {/* Bottom action row */}
-                      <div className="mt-6 pt-5 border-t border-ink/6 flex items-center justify-between gap-4 flex-wrap">
+                      <div className="mt-6 pt-5 border-t border-ink/6 flex items-center gap-4 flex-wrap">
                         <button
                           onClick={copyDecisionSummary}
                           className="inline-flex items-center gap-2 text-sm font-medium text-ink/40 hover:text-ink/70 transition-colors cursor-pointer"
@@ -596,15 +603,6 @@ export default function LensPage() {
                             </>
                           )}
                         </button>
-                        <a
-                          href={FULL_TOOL_URL}
-                          target="_blank"
-                          rel="noreferrer noopener"
-                          className="inline-flex items-center gap-1.5 text-sm font-bold text-electric hover:text-electric/80 transition-colors"
-                        >
-                          Run this on your own data
-                          <span>→</span>
-                        </a>
                       </div>
                     </motion.div>
                   ) : (
@@ -630,19 +628,10 @@ export default function LensPage() {
           </motion.div>
 
         {/* ── Footer strip ── */}
-        <div className="mt-12 pt-6 border-t border-ink/8 flex items-center justify-between flex-wrap gap-4">
+        <div className="mt-12 pt-6 border-t border-ink/8">
           <p className="text-[11px] text-ink/20">
             Add data → Run analysis → Get decision
           </p>
-          <a
-            href={FULL_TOOL_URL}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-electric hover:text-electric/80 transition-colors"
-          >
-            Run this on your own data
-            <span>→</span>
-          </a>
         </div>
       </div>
     </div>
