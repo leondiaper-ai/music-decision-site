@@ -71,7 +71,13 @@ export default function Footer() {
             <div className="eyebrow text-paper/50 mb-3">Coming</div>
             <ul className="space-y-1.5 text-sm text-paper/70">
               <li>— Case studies</li>
-              <li>— Experiments</li>
+              <li>
+                — Experiments
+                <ul className="mt-1 ml-4 space-y-1 text-paper/45 text-[13px]">
+                  <li>· Archive intelligence</li>
+                  <li>· Film location scoring</li>
+                </ul>
+              </li>
               <li>— Internal tools</li>
               <li>— About / profile</li>
             </ul>
