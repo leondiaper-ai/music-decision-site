@@ -34,14 +34,9 @@ export default function WhySection() {
           </div>
 
           <div className="md:col-span-7 md:pl-10">
-            <p className="text-lg md:text-xl text-ink/80 leading-snug mb-4 max-w-xl">
-              Music teams already have dashboards. What they need is a system that
-              reads the signals and tells them what to do next — on release, on
-              paid, on content, on planning.
-            </p>
-            <p className="text-base text-ink/55 leading-relaxed mb-10 max-w-xl">
-              Most teams already have the data. What they lack is a shared way to
-              interpret signals and act on them consistently.
+            <p className="text-lg md:text-xl text-ink/80 leading-snug mb-10 max-w-xl">
+              Teams already have data. What they don't have is a shared way to
+              decide what to do next.
             </p>
 
             <div className="divide-y divide-ink/15 border-y border-ink/15">

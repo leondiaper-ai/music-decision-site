@@ -20,6 +20,10 @@ export default function Footer() {
 
         <div className="mt-16 grid md:grid-cols-12 gap-8 pt-10 border-t border-paper/15">
           <div className="md:col-span-5">
+            <p className="text-paper/65 text-sm md:text-base leading-snug mb-6 max-w-sm">
+              I design and prototype systems like this using AI, data, and simple
+              logic.
+            </p>
             <div className="eyebrow text-paper/50 mb-3">Contact</div>
             <a
               href="mailto:leondiaper@gmail.com"

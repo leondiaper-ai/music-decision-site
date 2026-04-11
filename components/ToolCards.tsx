@@ -7,7 +7,7 @@ const tools = [
     number: "01",
     title: "Artist & Track Lens",
     tagline:
-      "Drop in messy CSVs. Get a clear decision. Most teams already have the data — they just don't have a clear read on what it means. This tool removes the interpretation and gives you a next step.",
+      "Drop in messy CSVs. See what's actually happening — and what to do next.",
     href: "/lens",
     inputs: ["Raw Spotify / streaming exports", "Noisy performance signals", "Mixed time windows"],
     outputs: ["Clear health status", "What's actually happening", "What to do next"],
@@ -18,7 +18,7 @@ const tools = [
     number: "02",
     title: "Campaign Timeline",
     tagline:
-      "Release activity lives in spreadsheets, calendars, and Slack threads. This tool puts every moment, push, and performance peak on one timeline — so the whole team sees the same picture.",
+      "Every release moment, push and peak on one timeline — so you can see what actually moved the campaign.",
     href: "https://campaign-timeline-viewer.vercel.app",
     inputs: ["Release moments", "Activity log", "Performance markers"],
     outputs: ["Unified timeline", "Momentum read", "Cadence gaps"],
@@ -30,7 +30,7 @@ const tools = [
     number: "03",
     title: "YouTube Campaign Coach",
     tagline:
-      "YouTube plans often start strong and lose structure by week three. This tool maps shorts, premieres, and uploads to release moments — and flags when cadence drops before the team notices.",
+      "Map shorts, premieres and uploads to release moments. Structure, not guesswork.",
     href: "https://youtube-campaign-coach.vercel.app",
     inputs: ["Release window", "Channel context", "Asset inventory"],
     outputs: ["Posting plan", "Moment mapping", "Priority queue"],
@@ -53,8 +53,8 @@ export default function ToolCards() {
               <span className="italic font-light">One workflow.</span>
             </h2>
             <p className="text-ink/60 text-base md:text-lg leading-relaxed mt-5 max-w-2xl">
-              I built these tools because marketing teams already have data — but
-              no shared way to turn it into decisions.
+              I built three tools that work together as one system — turning messy
+              data into a clear next step.
             </p>
           </div>
           <p className="hidden md:block max-w-xs text-ink/70 text-sm leading-relaxed">

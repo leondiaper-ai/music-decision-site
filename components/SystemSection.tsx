@@ -69,8 +69,8 @@ export default function SystemSection() {
             </h2>
           </div>
           <p className="hidden md:block max-w-xs text-ink/70 text-sm leading-relaxed">
-            The system is modular. Each block can stand alone — but together they
-            produce something more useful than any dashboard.
+            Most teams look at these separately. This combines them into one clear
+            decision.
           </p>
         </div>
 

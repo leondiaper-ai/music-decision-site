@@ -20,24 +20,29 @@ export default function Hero() {
           <span className="eyebrow text-ink/60 hidden md:inline">v1 · Decision System</span>
         </div>
 
+        {/* Subtle supporting tagline above the headline */}
+        <p className="font-display italic text-lg md:text-xl text-ink/55 mb-5">
+          Music marketing, but with decisions.
+        </p>
+
         {/* Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="headline text-[14vw] md:text-[9.5vw] lg:text-[8.4rem] font-display"
+          className="headline text-[8.5vw] md:text-[6vw] lg:text-[5.4rem] font-display leading-[1.02]"
         >
-          Music marketing,
+          Most marketing tools show data.
           <br />
-          <span className="italic font-light">but with</span>{" "}
+          <span className="italic font-light">This system tells you</span>{" "}
           <span className="relative inline-block">
-            <span className="relative z-10">decisions.</span>
+            <span className="relative z-10">what to do next.</span>
             <motion.span
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 0.8, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
               style={{ transformOrigin: "left" }}
-              className="absolute left-0 right-0 bottom-1 md:bottom-3 h-3 md:h-5 bg-signal -z-0"
+              className="absolute left-0 right-0 bottom-1 md:bottom-2 h-2.5 md:h-4 bg-signal -z-0"
             />
           </span>
         </motion.h1>
@@ -50,9 +55,8 @@ export default function Hero() {
             transition={{ delay: 0.3, duration: 0.7 }}
             className="md:col-span-6 text-lg md:text-xl leading-snug text-ink/80 max-w-xl"
           >
-            Most tools show you data. This system helps you decide what to do next —
-            connecting artist health, track signals, campaign moments and YouTube
-            planning into one clear recommendation.
+            Artist health, track signals, campaign moments and YouTube planning —
+            combined into one clear recommendation.
           </motion.p>
 
           <motion.div
@@ -77,8 +81,13 @@ export default function Hero() {
           </motion.div>
         </div>
 
+        {/* Diagram caption — explains the system in one line */}
+        <p className="mt-16 md:mt-24 mb-4 text-sm md:text-base text-ink/60">
+          A simple system: multiple signals → one decision.
+        </p>
+
         {/* Animated node diagram */}
-        <div className="relative mt-16 md:mt-24 h-[380px] md:h-[440px] rounded-3xl bg-cream border border-ink/10 overflow-hidden">
+        <div className="relative h-[380px] md:h-[440px] rounded-3xl bg-cream border border-ink/10 overflow-hidden">
           {/* Grid bg */}
           <div
             className="absolute inset-0 opacity-[0.08]"

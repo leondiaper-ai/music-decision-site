@@ -55,8 +55,7 @@ export default function DecisionExamples() {
             </h2>
           </div>
           <p className="hidden md:block max-w-xs text-paper/70 text-sm leading-relaxed">
-            Illustrative only. Every output is scoped to a team's real decisions —
-            release, paid, content, planning.
+            Because dashboards don't make decisions. People do.
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import SystemSection from "@/components/SystemSection";
+import HowThisWorks from "@/components/HowThisWorks";
 import DecisionExamples from "@/components/DecisionExamples";
 import ToolCards from "@/components/ToolCards";
 import WhySection from "@/components/WhySection";
@@ -14,6 +15,7 @@ export default function Page() {
       <Hero />
       <Marquee />
       <SystemSection />
+      <HowThisWorks />
       <DecisionExamples />
       <ToolCards />
       <WhySection />
