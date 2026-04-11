@@ -10,7 +10,6 @@ import ExampleOutput from "@/components/locations/ExampleOutput";
 import FeasibilitySnapshot from "@/components/locations/FeasibilitySnapshot";
 import HowItWorks from "@/components/locations/HowItWorks";
 import WhyThisMatters from "@/components/locations/WhyThisMatters";
-import CrossDomain from "@/components/locations/CrossDomain";
 import LocationFooter from "@/components/locations/LocationFooter";
 import InsightCue from "@/components/archive/InsightCue";
 import {
@@ -71,7 +70,6 @@ export default function LocationFeasibilityPage() {
       <HowItWorks />
       <InsightCue text="Each layer feeds the next. Over time, the memory layer makes every subsequent assessment faster and more accurate." />
       <WhyThisMatters />
-      <CrossDomain />
       <LocationFooter />
     </main>
   );
