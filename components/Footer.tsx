@@ -74,8 +74,24 @@ export default function Footer() {
               <li>
                 — Experiments
                 <ul className="mt-1 ml-4 space-y-1 text-paper/45 text-[13px]">
-                  <li>· Archive intelligence</li>
-                  <li>· Film location scoring</li>
+                  <li>
+                    ·{" "}
+                    <a
+                      href="/archive/british-state-power-ireland"
+                      className="hover:text-signal transition-colors"
+                    >
+                      Archive intelligence
+                    </a>
+                  </li>
+                  <li>
+                    ·{" "}
+                    <a
+                      href="/locations/feasibility-lens"
+                      className="hover:text-signal transition-colors"
+                    >
+                      Film location scoring
+                    </a>
+                  </li>
                 </ul>
               </li>
               <li>— Internal tools</li>
