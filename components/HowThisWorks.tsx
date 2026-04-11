@@ -5,15 +5,15 @@ import { motion } from "framer-motion";
 const steps = [
   {
     label: "Input",
-    body: "Streaming data, campaign activity, content plans.",
+    body: "Real campaign signals (streams, saves, content, spend).",
   },
   {
     label: "System",
-    body: "Simple logic + structured signals.",
+    body: "Simple logic that cuts through noise.",
   },
   {
     label: "Output",
-    body: "One clear recommendation.",
+    body: "A decision you can actually act on.",
   },
 ];
 

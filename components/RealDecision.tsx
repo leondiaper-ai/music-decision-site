@@ -73,6 +73,12 @@ export default function RealDecision() {
                 <span>PUSH</span>
               </div>
               <div className="border-t border-paper/15 pt-5">
+                <div className="eyebrow text-paper/50 mb-2">Action</div>
+                <p className="text-paper text-base md:text-lg leading-snug max-w-md">
+                  Increase spend to scale reach.
+                </p>
+              </div>
+              <div className="border-t border-paper/15 pt-5 mt-5">
                 <div className="eyebrow text-paper/50 mb-2">Why</div>
                 <p className="text-paper/85 text-base md:text-lg leading-snug max-w-md">
                   Strong intent, weak reach. The track is working — it just needs

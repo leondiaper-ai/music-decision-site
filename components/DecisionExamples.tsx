@@ -55,7 +55,7 @@ export default function DecisionExamples() {
             </h2>
           </div>
           <p className="hidden md:block max-w-xs text-paper/70 text-sm leading-relaxed">
-            Because dashboards don't make decisions. People do.
+            These are the outputs teams actually act on.
           </p>
         </div>
 
