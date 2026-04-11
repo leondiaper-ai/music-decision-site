@@ -28,6 +28,10 @@ export default function EmergingInsight() {
             This insight is derived from the relationship between 3 archived
             investigations, not from any single entry.
           </p>
+          <p className="mt-3 text-sm md:text-base text-ink/55">
+            The goal is not just to understand the pattern, but to surface where
+            it becomes actionable.
+          </p>
         </motion.div>
       </div>
     </section>

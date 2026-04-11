@@ -75,7 +75,7 @@ export default function RealDecision() {
               <div className="border-t border-paper/15 pt-5">
                 <div className="eyebrow text-paper/50 mb-2">Action</div>
                 <p className="text-paper text-base md:text-lg leading-snug max-w-md">
-                  Increase paid support to scale reach.
+                  Increase paid support to scale reach now.
                 </p>
               </div>
               <div className="border-t border-paper/15 pt-5 mt-5">

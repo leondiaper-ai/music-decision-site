@@ -24,6 +24,9 @@ export default function Footer() {
               I design and prototype systems like this using AI, data, and simple
               logic.
             </p>
+            <p className="text-paper/55 text-xs md:text-sm leading-snug mb-6 max-w-sm">
+              Available for roles in creative technology and AI systems.
+            </p>
             <div className="eyebrow text-paper/50 mb-3">Contact</div>
             <a
               href="mailto:leondiaper@gmail.com"

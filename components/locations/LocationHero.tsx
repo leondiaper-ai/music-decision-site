@@ -55,7 +55,17 @@ export default function LocationHero() {
           transition={{ delay: 0.3, duration: 0.7 }}
           className="mt-10 text-lg md:text-xl leading-snug text-ink/70 max-w-2xl"
         >
-          Turn a creative location idea into a real-world plan in minutes.
+          Turn a creative location idea into a clear, real-world decision.
+        </motion.p>
+
+        {/* Quiet framing line */}
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.7 }}
+          className="mt-3 text-sm md:text-base text-ink/50 italic max-w-2xl"
+        >
+          An experiment in translating creative ideas into real-world decisions.
         </motion.p>
 
         {/* Supporting copy */}

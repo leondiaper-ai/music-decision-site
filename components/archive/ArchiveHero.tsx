@@ -54,6 +54,17 @@ export default function ArchiveHero() {
           archived for long-term use.
         </motion.p>
 
+        {/* Quiet framing line */}
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45, duration: 0.7 }}
+          className="mt-4 text-sm md:text-base text-ink/50 italic max-w-2xl"
+        >
+          An experiment in turning fragmented reporting into structured
+          intelligence.
+        </motion.p>
+
         {/* Meta strip */}
         <motion.div
           initial={{ opacity: 0 }}

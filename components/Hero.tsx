@@ -49,15 +49,20 @@ export default function Hero() {
 
         {/* Sub + CTA grid */}
         <div className="mt-12 grid md:grid-cols-12 gap-8 items-end">
-          <motion.p
+          <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.7 }}
-            className="md:col-span-6 text-lg md:text-xl leading-snug text-ink/80 max-w-xl"
+            className="md:col-span-6 max-w-xl"
           >
-            Artist health, track signals, campaign moments and YouTube planning —
-            combined into one clear recommendation.
-          </motion.p>
+            <p className="text-lg md:text-xl leading-snug text-ink/80">
+              Artist health, track signals, campaign moments and YouTube planning —
+              combined into one clear recommendation.
+            </p>
+            <p className="mt-3 text-sm md:text-base text-ink/55">
+              A system for turning signals into decisions.
+            </p>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 12 }}

@@ -7,7 +7,7 @@ const tools = [
     number: "01",
     title: "Artist & Track Lens",
     tagline:
-      "Drop in messy CSVs. See what's actually happening — and what to do next.",
+      "Drop in messy data. See what's happening — and what to do next.",
     href: "/lens",
     inputs: ["Raw Spotify / streaming exports", "Noisy performance signals", "Mixed time windows"],
     outputs: ["Clear health status", "What's actually happening", "What to do next"],
