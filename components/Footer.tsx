@@ -34,12 +34,10 @@ export default function Footer() {
             <ul className="space-y-1.5 text-sm">
               <li>
                 <a
-                  href="https://pih-v2.vercel.app/label"
-                  target="_blank"
-                  rel="noreferrer noopener"
+                  href="/lens"
                   className="hover:text-signal transition-colors"
                 >
-                  Artist & Track Check ↗
+                  Artist & Track Lens →
                 </a>
               </li>
               <li>
@@ -59,7 +57,7 @@ export default function Footer() {
                   rel="noreferrer noopener"
                   className="hover:text-signal transition-colors"
                 >
-                  YouTube Coach ↗
+                  YouTube Campaign Coach ↗
                 </a>
               </li>
             </ul>
