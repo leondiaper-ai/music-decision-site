@@ -1,4 +1,5 @@
 import Nav from "@/components/Nav";
+import NorthStar from "@/components/NorthStar";
 import Hero from "@/components/Hero";
 import RealDecision from "@/components/RealDecision";
 import SystemSection from "@/components/SystemSection";
@@ -13,6 +14,7 @@ export default function Page() {
   return (
     <main className="overflow-hidden">
       <Nav />
+      <NorthStar />
       <Hero />
       <Marquee />
       <RealDecision />
