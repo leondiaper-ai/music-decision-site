@@ -75,7 +75,7 @@ export default function RealDecision() {
               <div className="border-t border-paper/15 pt-5">
                 <div className="eyebrow text-paper/50 mb-2">Action</div>
                 <p className="text-paper text-base md:text-lg leading-snug max-w-md">
-                  Increase spend to scale reach.
+                  Increase paid support to scale reach.
                 </p>
               </div>
               <div className="border-t border-paper/15 pt-5 mt-5">
@@ -91,7 +91,7 @@ export default function RealDecision() {
 
         {/* Closing line — calm, confident, no hype */}
         <p className="mt-12 md:mt-16 text-base md:text-lg text-ink/55 max-w-2xl">
-          Most teams would debate this. This system makes it obvious.
+          Most teams would debate this. This system makes the call.
         </p>
       </div>
     </section>

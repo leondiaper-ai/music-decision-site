@@ -53,8 +53,7 @@ export default function ToolCards() {
               <span className="italic font-light">One workflow.</span>
             </h2>
             <p className="text-ink/60 text-base md:text-lg leading-relaxed mt-5 max-w-2xl">
-              I built three tools that work together as one system — turning messy
-              data into a clear next step.
+              Three tools that turn messy data into a clear next step.
             </p>
           </div>
           <p className="hidden md:block max-w-xs text-ink/70 text-sm leading-relaxed">
@@ -140,6 +139,8 @@ export default function ToolCards() {
         {/* Minimal usage footnote — no box, no emphasis */}
         <p className="mt-10 text-xs text-ink/35">
           Used weekly to guide artist, track and campaign decisions.
+          <span className="mx-2 text-ink/20">·</span>
+          Built as fast prototypes, refined into usable systems.
         </p>
       </div>
     </section>

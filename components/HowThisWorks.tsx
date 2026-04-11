@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 const steps = [
   {
     label: "Input",
-    body: "Real campaign signals (streams, saves, content, spend).",
+    body: "Real campaign signals (not dashboards).",
   },
   {
     label: "System",

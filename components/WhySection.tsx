@@ -35,8 +35,8 @@ export default function WhySection() {
 
           <div className="md:col-span-7 md:pl-10">
             <p className="text-lg md:text-xl text-ink/80 leading-snug mb-10 max-w-xl">
-              Teams already have data. What they don't have is a shared way to
-              decide what to do next.
+              Teams already have data. What they don't have is a clear next
+              move.
             </p>
 
             <div className="divide-y divide-ink/15 border-y border-ink/15">
