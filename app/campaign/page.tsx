@@ -98,25 +98,25 @@ function generateOutput(input: CampaignInput): CampaignOutput {
     risk = "High";
   }
 
-  // Budget allocation
+  // Capital deployment
   const budgetAlloc =
     decision === "PUSH"
       ? [
-          { label: "Paid media", pct: 45, amount: formatBudget(Math.round(budget * 0.45)) },
-          { label: "Content production", pct: 30, amount: formatBudget(Math.round(budget * 0.3)) },
-          { label: "Playlist / PR", pct: 15, amount: formatBudget(Math.round(budget * 0.15)) },
+          { label: "Scale reach", pct: 45, amount: formatBudget(Math.round(budget * 0.45)) },
+          { label: "Build initial signal", pct: 30, amount: formatBudget(Math.round(budget * 0.3)) },
+          { label: "Amplify discovery", pct: 15, amount: formatBudget(Math.round(budget * 0.15)) },
           { label: "Reserve", pct: 10, amount: formatBudget(Math.round(budget * 0.1)) },
         ]
       : decision === "TEST"
       ? [
-          { label: "Content production", pct: 40, amount: formatBudget(Math.round(budget * 0.4)) },
-          { label: "Paid testing", pct: 30, amount: formatBudget(Math.round(budget * 0.3)) },
-          { label: "Organic push", pct: 20, amount: formatBudget(Math.round(budget * 0.2)) },
+          { label: "Build initial signal", pct: 40, amount: formatBudget(Math.round(budget * 0.4)) },
+          { label: "Validate audience response", pct: 30, amount: formatBudget(Math.round(budget * 0.3)) },
+          { label: "Amplify early traction", pct: 20, amount: formatBudget(Math.round(budget * 0.2)) },
           { label: "Reserve", pct: 10, amount: formatBudget(Math.round(budget * 0.1)) },
         ]
       : [
-          { label: "Content production", pct: 50, amount: formatBudget(Math.round(budget * 0.5)) },
-          { label: "Audience research", pct: 30, amount: formatBudget(Math.round(budget * 0.3)) },
+          { label: "Build baseline signal", pct: 50, amount: formatBudget(Math.round(budget * 0.5)) },
+          { label: "Map audience", pct: 30, amount: formatBudget(Math.round(budget * 0.3)) },
           { label: "Reserve", pct: 20, amount: formatBudget(Math.round(budget * 0.2)) },
         ];
 
@@ -319,7 +319,7 @@ const SIM_MESSAGES = [
   "Reading audience signals…",
   "Evaluating track strength…",
   "Generating campaign approach…",
-  "Allocating budget…",
+  "Deploying capital…",
 ];
 
 /* ─── Decision Color Map ────────────────────────────────── */
@@ -428,7 +428,7 @@ export default function CampaignPage() {
             Campaign System
           </span>
           <p className="text-paper/45 text-sm md:text-base mb-4">
-            Music marketing still relies on guesswork.
+            Most music marketing spend is guesswork.
           </p>
           <h1 className="headline font-display text-5xl md:text-7xl leading-[0.95]">
             AI runs
@@ -651,10 +651,20 @@ export default function CampaignPage() {
                     </div>
                   </div>
 
-                  {/* Budget allocation */}
+                  {/* Campaign state */}
+                  <p className="text-paper/55 text-sm mb-8">
+                    Campaign state: {output.decision}.{" "}
+                    {output.decision === "PUSH"
+                      ? "Capital deployed to scale reach while momentum holds."
+                      : output.decision === "TEST"
+                      ? "Capital deployed to validate early signal before scaling."
+                      : "Capital held until signal justifies deployment."}
+                  </p>
+
+                  {/* Capital deployment */}
                   <div className="border-t border-paper/15 pt-6 mb-6">
                     <div className="eyebrow text-paper/40 mb-4">
-                      Budget allocation
+                      Capital deployment
                     </div>
                     <div className="flex gap-1 h-3 rounded-full overflow-hidden mb-4">
                       {output.budgetAlloc.map((a) => (
@@ -720,6 +730,12 @@ export default function CampaignPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* System statement */}
+                <p className="text-sm text-ink/45 mb-8">
+                  This system decides where budget goes based on signal, not
+                  assumptions.
+                </p>
 
                 {/* Campaign preview — tangible translation */}
                 <div className="rounded-xl border border-ink/10 p-6 md:p-8 mb-8">
