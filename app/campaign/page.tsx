@@ -21,6 +21,12 @@ interface ContentItem {
   timing: string;
 }
 
+interface CampaignPreview {
+  contentOutputs: { item: string; timing: string }[];
+  budgetTranslation: { spend: string; output: string }[];
+  audienceContext: string;
+}
+
 interface AlternativeDecision {
   decision: Decision;
   confidence: number;
@@ -42,6 +48,7 @@ interface CampaignOutput {
   alternatives: AlternativeDecision[];
   tradeoff: string;
   triggers: string[];
+  preview: CampaignPreview;
 }
 
 type Step = "input" | "simulating" | "output";
@@ -228,6 +235,69 @@ function generateOutput(input: CampaignInput): CampaignOutput {
           "Competitor release clears lane → consider earlier push",
         ];
 
+  // Campaign preview — tangible translation
+  const preview: CampaignPreview =
+    decision === "PUSH"
+      ? {
+          contentOutputs: [
+            { item: "BTS studio content", timing: "Week 1" },
+            { item: "Short-form cutdowns (TikTok / Reels)", timing: "Week 1–2" },
+            { item: "Creator collab clips", timing: "Week 2–3" },
+          ],
+          budgetTranslation: [
+            {
+              spend: formatBudget(Math.round(budget * 0.3)),
+              output: `${Math.max(2, Math.round(budget / 3000))} video assets + ${Math.max(4, Math.round(budget / 1500))} short-form cuts`,
+            },
+            {
+              spend: formatBudget(Math.round(budget * 0.45)),
+              output: `paid reach across ${isEstablished ? "5" : "3"} audience segments`,
+            },
+          ],
+          audienceContext: isEstablished
+            ? "Target: playlist-driven listeners + engaged subscribers"
+            : isEmerging
+            ? "Target: alt-pop TikTok creators (50–200k followers)"
+            : "Target: genre-adjacent creators + editorial curators",
+        }
+      : decision === "TEST"
+      ? {
+          contentOutputs: [
+            { item: "Teaser clips", timing: "Week 1" },
+            { item: "Short-form cutdowns (TikTok / Reels)", timing: "Week 1–2" },
+          ],
+          budgetTranslation: [
+            {
+              spend: formatBudget(Math.round(budget * 0.4)),
+              output: `${Math.max(2, Math.round(budget / 4000))} video assets + ${Math.max(3, Math.round(budget / 2000))} short-form cuts`,
+            },
+            {
+              spend: formatBudget(Math.round(budget * 0.3)),
+              output: `audience testing across ${isEmerging ? "2" : "3"} segments`,
+            },
+          ],
+          audienceContext: isEmerging
+            ? "Target: niche community accounts + micro-creators"
+            : "Target: genre-adjacent listeners + discovery playlists",
+        }
+      : {
+          contentOutputs: [
+            { item: "BTS / studio content", timing: "Week 1–2" },
+            { item: "Teaser clips", timing: "Week 2–3" },
+          ],
+          budgetTranslation: [
+            {
+              spend: formatBudget(Math.round(budget * 0.5)),
+              output: `${Math.max(1, Math.round(budget / 5000))} video assets + ${Math.max(2, Math.round(budget / 3000))} clips`,
+            },
+            {
+              spend: formatBudget(Math.round(budget * 0.3)),
+              output: "audience research + listening data analysis",
+            },
+          ],
+          audienceContext: "Target: core listeners — building baseline before scaling",
+        };
+
   return {
     decision,
     confidence,
@@ -239,6 +309,7 @@ function generateOutput(input: CampaignInput): CampaignOutput {
     alternatives,
     tradeoff,
     triggers,
+    preview,
   };
 }
 
@@ -356,6 +427,9 @@ export default function CampaignPage() {
           <span className="eyebrow text-paper/50 mb-4 block">
             Campaign System
           </span>
+          <p className="text-paper/45 text-sm md:text-base mb-4">
+            Music marketing still relies on guesswork.
+          </p>
           <h1 className="headline font-display text-5xl md:text-7xl leading-[0.95]">
             AI runs
             <br />
@@ -644,6 +718,63 @@ export default function CampaignPage() {
                       <span className="text-signal mt-0.5">→</span>
                       {output.nextAction}
                     </p>
+                  </div>
+                </div>
+
+                {/* Campaign preview — tangible translation */}
+                <div className="rounded-xl border border-ink/10 p-6 md:p-8 mb-8">
+                  <div className="eyebrow text-ink/45 mb-5">
+                    Campaign preview
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-8">
+                    {/* Content outputs */}
+                    <div>
+                      <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-3">
+                        Content
+                      </div>
+                      <ul className="space-y-2">
+                        {output.preview.contentOutputs.map((c) => (
+                          <li
+                            key={c.item}
+                            className="text-sm text-ink/75 flex justify-between gap-2"
+                          >
+                            <span>{c.item}</span>
+                            <span className="text-ink/35 shrink-0">
+                              {c.timing}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Budget → reality */}
+                    <div>
+                      <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-3">
+                        Budget → output
+                      </div>
+                      <ul className="space-y-2">
+                        {output.preview.budgetTranslation.map((b) => (
+                          <li key={b.spend} className="text-sm">
+                            <span className="font-display font-bold text-ink">
+                              {b.spend}
+                            </span>
+                            <span className="text-ink/30 mx-1.5">→</span>
+                            <span className="text-ink/65">{b.output}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Audience */}
+                    <div>
+                      <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-3">
+                        Audience
+                      </div>
+                      <p className="text-sm text-ink/65 leading-relaxed">
+                        {output.preview.audienceContext}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
