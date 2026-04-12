@@ -21,6 +21,17 @@ interface ContentItem {
   timing: string;
 }
 
+interface CulturalContext {
+  reference: string;
+  tone: string;
+  intent: string;
+}
+
+interface ExecutionDirective {
+  label: string;
+  detail: string;
+}
+
 interface CampaignPreview {
   contentOutputs: { item: string; timing: string }[];
   budgetTranslation: { spend: string; output: string }[];
@@ -49,6 +60,8 @@ interface CampaignOutput {
   tradeoff: string;
   triggers: string[];
   preview: CampaignPreview;
+  culture: CulturalContext;
+  execution: ExecutionDirective[];
 }
 
 type Step = "input" | "simulating" | "output";
@@ -62,10 +75,68 @@ function formatBudget(n: number): string {
   return n >= 1000 ? `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `$${n}`;
 }
 
+function generateCulture(stage: ArtistStage): CulturalContext {
+  if (stage === "emerging")
+    return {
+      reference: "Raw studio session, first headline show energy",
+      tone: "Lo-fi, raw, unfiltered",
+      intent: "Authenticity + discovery",
+    };
+  if (stage === "established")
+    return {
+      reference: "Arena-level confidence, catalogue moment",
+      tone: "Cinematic, high-production",
+      intent: "Scale + cultural positioning",
+    };
+  return {
+    reference: "Breakout single, underground-to-mainstream crossover",
+    tone: "Energetic, narrative-driven",
+    intent: "Credibility + momentum",
+  };
+}
+
+function generateExecution(
+  decision: Decision,
+  culture: CulturalContext,
+): ExecutionDirective[] {
+  if (decision === "PUSH") {
+    return culture.tone.includes("Lo-fi")
+      ? [
+          { label: "Content direction", detail: "Raw, unpolished assets. Avoid over-production." },
+          { label: "Creator strategy", detail: "Authentic voices only. Prioritise storytelling over reach." },
+          { label: "Platform timing", detail: "Front-load organic, scale paid after 48hr signal." },
+        ]
+      : culture.tone.includes("Cinematic")
+      ? [
+          { label: "Content direction", detail: "High-production hero assets. Cinematic first impression." },
+          { label: "Creator strategy", detail: "Established voices + editorial placements." },
+          { label: "Platform timing", detail: "Simultaneous paid + organic launch. Maximise day-1 reach." },
+        ]
+      : [
+          { label: "Content direction", detail: "Narrative-driven assets. Story over volume." },
+          { label: "Creator strategy", detail: "Genre-adjacent creators who build credibility." },
+          { label: "Platform timing", detail: "Staggered rollout. Build momentum across 7 days." },
+        ];
+  }
+  if (decision === "TEST") {
+    return [
+      { label: "Content direction", detail: `Focus on ${culture.tone.toLowerCase()} content. Test formats before committing.` },
+      { label: "Creator strategy", detail: "Micro-creators. Prioritise alignment over follower count." },
+      { label: "Platform timing", detail: "Organic first. Paid only after signal confirms direction." },
+    ];
+  }
+  return [
+    { label: "Content direction", detail: `Minimal output. ${culture.tone} tone when ready.` },
+    { label: "Creator strategy", detail: "Hold outreach. Research aligned voices for future activation." },
+    { label: "Platform timing", detail: "No paid spend. Organic only until signal justifies investment." },
+  ];
+}
+
 function generateOutput(input: CampaignInput): CampaignOutput {
   const budget = BUDGET_MAP(input.budget);
   const isEmerging = input.artistStage === "emerging";
   const isEstablished = input.artistStage === "established";
+  const culture = generateCulture(input.artistStage);
 
   // Decision logic (presentational but plausible)
   let decision: Decision;
@@ -190,6 +261,18 @@ function generateOutput(input: CampaignInput): CampaignOutput {
           ? "Enough content to test formats without over-committing."
           : "Minimal output until direction is clearer.",
     },
+    {
+      label: "Cultural alignment",
+      value: culture.tone.split(",")[0],
+      detail:
+        decision === "PUSH" && isEmerging
+          ? "Strong early engagement, but scaling must respect raw positioning. No over-polished assets."
+          : decision === "PUSH"
+          ? `Campaign direction (${culture.intent.toLowerCase()}) supports aggressive deployment within cultural frame.`
+          : decision === "TEST"
+          ? `Cultural direction (${culture.intent.toLowerCase()}) shapes test formats. Authenticity over volume.`
+          : `Holding until cultural direction can be validated with signal.`,
+    },
   ];
 
   // Alternatives
@@ -298,6 +381,8 @@ function generateOutput(input: CampaignInput): CampaignOutput {
           audienceContext: "Target: core listeners — building baseline before scaling",
         };
 
+  const execution = generateExecution(decision, culture);
+
   return {
     decision,
     confidence,
@@ -310,16 +395,18 @@ function generateOutput(input: CampaignInput): CampaignOutput {
     tradeoff,
     triggers,
     preview,
+    culture,
+    execution,
   };
 }
 
 /* ─── Simulation Messages ───────────────────────────────── */
 
 const SIM_MESSAGES = [
-  "Reading audience signals…",
-  "Evaluating track strength…",
-  "Generating campaign approach…",
-  "Deploying capital…",
+  "Setting cultural context…",
+  "Reading signal within cultural context…",
+  "Evaluating activity against campaign direction…",
+  "Generating decision + deploying capital…",
 ];
 
 /* ─── Decision Color Map ────────────────────────────────── */
@@ -607,6 +694,44 @@ export default function CampaignPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             >
+              {/* ── Cultural Context (Step 0) ──────────────── */}
+              <div className="mb-12">
+                <span className="eyebrow text-ink/50 mb-6 block">
+                  00 — Cultural context
+                </span>
+                <div className="rounded-xl border border-ink/10 p-6 md:p-8">
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div>
+                      <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
+                        Reference
+                      </div>
+                      <p className="text-sm text-ink/75 leading-snug">
+                        {output.culture.reference}
+                      </p>
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
+                        Tone
+                      </div>
+                      <p className="font-display font-bold text-base text-ink">
+                        {output.culture.tone}
+                      </p>
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
+                        Campaign intent
+                      </div>
+                      <p className="font-display font-bold text-base text-ink">
+                        {output.culture.intent}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-5 text-sm text-ink/45 border-t border-ink/10 pt-4">
+                    All decisions are made within this context.
+                  </p>
+                </div>
+              </div>
+
               {/* ── Core Output (System 1) ──────────────── */}
               <div className="mb-16 md:mb-24">
                 <span className="eyebrow text-ink/50 mb-6 block">
@@ -731,10 +856,31 @@ export default function CampaignPage() {
                   </div>
                 </div>
 
-                {/* System statement */}
+                {/* Execution plan — tied to cultural direction */}
+                <div className="rounded-xl border border-ink/10 p-6 md:p-8 mb-8">
+                  <div className="eyebrow text-ink/45 mb-5">
+                    Execution plan
+                  </div>
+                  <div className="divide-y divide-ink/10">
+                    {output.execution.map((ex) => (
+                      <div
+                        key={ex.label}
+                        className="py-3.5 grid md:grid-cols-12 gap-2"
+                      >
+                        <div className="md:col-span-4 text-sm font-medium text-ink/50">
+                          {ex.label}
+                        </div>
+                        <div className="md:col-span-8 text-sm text-ink/75">
+                          {ex.detail}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* System philosophy */}
                 <p className="text-sm text-ink/45 mb-8">
-                  This system decides where budget goes based on signal, not
-                  assumptions.
+                  Culture defines the rules. Data decides the moves.
                 </p>
 
                 {/* Campaign preview — tangible translation */}
