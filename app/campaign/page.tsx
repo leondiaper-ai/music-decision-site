@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -23,7 +23,7 @@ interface SystemOutput {
   outcome: string;
 }
 
-/* ─── Engine (simplified for system layer) ─────────────── */
+/* ─── Engine ────────────────────────────────────────────── */
 
 const BUDGET_MAP = (pct: number) => Math.round(500 + (pct / 100) * 49500);
 function fmt(n: number) { return n >= 1000 ? `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `$${n}`; }
@@ -63,86 +63,206 @@ function generate(input: CampaignInput): SystemOutput {
 /* ─── Modules ──────────────────────────────────────────── */
 
 const MODULES = [
-  { id: "signal", label: "Signal Monitor", angle: -90 },
-  { id: "culture", label: "Cultural Intelligence", angle: -18 },
-  { id: "spend", label: "Spend Engine", angle: 54 },
-  { id: "youtube", label: "YouTube Coach", angle: 126 },
-  { id: "lens", label: "Artist & Track Lens", angle: 198 },
+  { id: "signal", label: "Signal Monitor", angle: -90, idx: 0 },
+  { id: "culture", label: "Cultural Intelligence", angle: -18, idx: 1 },
+  { id: "spend", label: "Spend Engine", angle: 54, idx: 2 },
+  { id: "youtube", label: "YouTube Coach", angle: 126, idx: 3 },
+  { id: "lens", label: "Artist & Track Lens", angle: 198, idx: 4 },
 ] as const;
+
+type ModuleId = (typeof MODULES)[number]["id"];
+
+/* ─── System loop phases ───────────────────────────────── */
+
+type Phase = "idle" | "signal_fire" | "culture_fire" | "converge" | "decide" | "downstream" | "settle";
+
+interface LoopState {
+  phase: Phase;
+  decision: Decision;
+  confidence: number;
+  activeNodes: ModuleId[];
+  downstream: ModuleId | null;
+}
+
+const DECISIONS: Decision[] = ["PUSH", "TEST", "HOLD"];
+const CONF_BASE: Record<Decision, number> = { PUSH: 84, TEST: 70, HOLD: 62 };
+
+function useSystemLoop(): LoopState {
+  const [state, setState] = useState<LoopState>({
+    phase: "idle", decision: "PUSH", confidence: 84, activeNodes: [], downstream: null,
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    let idx = 0;
+
+    function run() {
+      if (!mounted) return;
+      const dec = DECISIONS[idx % DECISIONS.length];
+      const conf = CONF_BASE[dec] + Math.floor(Math.random() * 5) - 2; // slight jitter
+
+      // idle
+      setState({ phase: "idle", decision: dec, confidence: conf, activeNodes: [], downstream: null });
+
+      const t1 = setTimeout(() => {
+        if (!mounted) return;
+        // Signal fires
+        setState({ phase: "signal_fire", decision: dec, confidence: conf, activeNodes: ["signal"], downstream: null });
+      }, 1800);
+
+      const t2 = setTimeout(() => {
+        if (!mounted) return;
+        // Culture fires (stronger)
+        setState({ phase: "culture_fire", decision: dec, confidence: conf, activeNodes: ["signal", "culture", "lens"], downstream: null });
+      }, 3200);
+
+      const t3 = setTimeout(() => {
+        if (!mounted) return;
+        // Converge — all modules
+        setState({ phase: "converge", decision: dec, confidence: conf, activeNodes: ["signal", "culture", "spend", "youtube", "lens"], downstream: null });
+      }, 4600);
+
+      const t4 = setTimeout(() => {
+        if (!mounted) return;
+        // Decision
+        setState({ phase: "decide", decision: dec, confidence: conf, activeNodes: ["signal", "culture", "spend", "youtube", "lens"], downstream: null });
+      }, 5800);
+
+      const t5 = setTimeout(() => {
+        if (!mounted) return;
+        // Downstream — spend reacts
+        const ds: ModuleId | null = dec === "PUSH" ? "spend" : dec === "TEST" ? "spend" : null;
+        setState({ phase: "downstream", decision: dec, confidence: conf, activeNodes: ds ? [ds] : [], downstream: ds });
+      }, 7200);
+
+      const t6 = setTimeout(() => {
+        if (!mounted) return;
+        // Settle
+        setState({ phase: "settle", decision: dec, confidence: conf, activeNodes: [], downstream: null });
+      }, 8600);
+
+      const t7 = setTimeout(() => {
+        if (!mounted) return;
+        idx++;
+        run();
+      }, 10000);
+
+      return [t1, t2, t3, t4, t5, t6, t7];
+    }
+
+    const timers = run();
+    return () => {
+      mounted = false;
+      if (timers) timers.forEach(clearTimeout);
+    };
+  }, []);
+
+  return state;
+}
 
 /* ─── Hero System Map ──────────────────────────────────── */
 
-function SystemMap({ activeDecision, converging }: { activeDecision: Decision | null; converging: boolean }) {
-  const CX = 300, CY = 200, R = 140;
-  const decColor = !activeDecision ? "#0E0E0E" : activeDecision === "PUSH" ? "#FF4A1C" : activeDecision === "TEST" ? "#FFD24C" : "#2C25FF";
-  const showDec = activeDecision && converging;
+function SystemMap({ state, compact }: { state: LoopState; compact?: boolean }) {
+  const CX = 300, CY = compact ? 140 : 200, R = compact ? 100 : 145;
+  const VH = compact ? 280 : 400;
+  const decColor = state.decision === "PUSH" ? "#FF4A1C" : state.decision === "TEST" ? "#FFD24C" : "#2C25FF";
+  const isDeciding = state.phase === "decide";
+  const isConverging = state.phase === "converge" || isDeciding;
+  const isDownstream = state.phase === "downstream";
 
   return (
-    <svg viewBox="0 0 600 400" className="w-full max-w-[640px] mx-auto" preserveAspectRatio="xMidYMid meet">
-      <defs>
-        {MODULES.map((_, i) => (
-          <linearGradient key={`lg-${i}`} id={`lg-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#0E0E0E" stopOpacity={0.04} />
-            <stop offset="100%" stopColor="#0E0E0E" stopOpacity={0.12} />
-          </linearGradient>
-        ))}
-      </defs>
+    <svg viewBox={`0 0 600 ${VH}`} className={`w-full ${compact ? "max-w-[480px]" : "max-w-[640px]"} mx-auto`} preserveAspectRatio="xMidYMid meet">
 
       {/* Connection lines */}
-      {MODULES.map((mod, i) => {
+      {MODULES.map((mod) => {
         const rad = (mod.angle * Math.PI) / 180;
         const mx = CX + Math.cos(rad) * R;
         const my = CY + Math.sin(rad) * R;
+        const active = state.activeNodes.includes(mod.id);
+        const isDs = state.downstream === mod.id;
         return (
           <line
-            key={`c-${i}`}
+            key={`c-${mod.id}`}
             x1={mx} y1={my} x2={CX} y2={CY}
-            stroke={converging ? decColor : `url(#lg-${i})`}
-            strokeWidth={converging ? 1.5 : 0.75}
-            opacity={converging ? 0.35 : 1}
+            stroke={active || isDs ? decColor : "#0E0E0E"}
+            strokeWidth={active ? 1.5 : isDs ? 2 : 0.6}
+            opacity={active ? 0.35 : isDs ? 0.5 : 0.06}
             style={{ transition: "all 0.6s ease" }}
           />
         );
       })}
 
-      {/* Signal dots — always moving inward */}
-      {MODULES.map((mod, i) => {
+      {/* Inward signal dots — ambient, always on */}
+      {MODULES.map((mod) => {
         const rad = (mod.angle * Math.PI) / 180;
         const mx = CX + Math.cos(rad) * R;
         const my = CY + Math.sin(rad) * R;
+        const active = state.activeNodes.includes(mod.id);
+        // Signal module has faster ambient rhythm
+        const baseDur = mod.id === "signal" ? "2.5s" : mod.id === "culture" ? "4s" : "3.5s";
         return (
-          <circle key={`s-${i}`} r={converging ? 3 : 1.5} fill={converging ? decColor : "#0E0E0E"} opacity={converging ? 0.45 : 0.12}>
+          <circle key={`sig-${mod.id}`} r={active ? 2.5 : 1.5} fill={active ? decColor : "#0E0E0E"} opacity={active ? 0.4 : 0.08}>
             <animateMotion
-              dur={converging ? "0.8s" : "3.5s"}
+              dur={isConverging ? "0.7s" : baseDur}
               repeatCount="indefinite"
-              begin={`${i * 0.6}s`}
+              begin={`${mod.idx * 0.5}s`}
               path={`M${mx - CX},${my - CY} L0,0`}
             />
           </circle>
         );
       })}
 
+      {/* Downstream pulse — flows OUT from center to spend */}
+      {isDownstream && state.downstream && (() => {
+        const ds = MODULES.find((m) => m.id === state.downstream);
+        if (!ds) return null;
+        const rad = (ds.angle * Math.PI) / 180;
+        const mx = CX + Math.cos(rad) * R;
+        const my = CY + Math.sin(rad) * R;
+        return (
+          <circle r={3.5} fill={decColor} opacity={0.6}>
+            <animateMotion
+              dur="1.2s"
+              repeatCount="indefinite"
+              path={`M0,0 L${mx - CX},${my - CY}`}
+            />
+          </circle>
+        );
+      })()}
+
       {/* Module nodes */}
-      {MODULES.map((mod, i) => {
+      {MODULES.map((mod) => {
         const rad = (mod.angle * Math.PI) / 180;
         const mx = CX + Math.cos(rad) * R;
         const my = CY + Math.sin(rad) * R;
         const below = mod.angle > 0 && mod.angle < 180;
+        const active = state.activeNodes.includes(mod.id);
+        const isDs = state.downstream === mod.id;
+        const lit = active || isDs;
         return (
           <g key={mod.id}>
-            {/* Pulse ring */}
-            <circle cx={mx} cy={my} r={10} fill="none" stroke={converging ? decColor : "#0E0E0E"} strokeWidth={0.5} opacity={0}>
-              <animate attributeName="r" values="10;22;10" dur={`${2.5 + i * 0.3}s`} repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.06;0;0.06" dur={`${2.5 + i * 0.3}s`} repeatCount="indefinite" />
-            </circle>
-            <circle cx={mx} cy={my} r={converging ? 6 : 5} fill={converging ? decColor : "#0E0E0E"} opacity={converging ? 0.6 : 0.35} style={{ transition: "all 0.5s ease" }} />
+            {/* Pulse ring — only when active */}
+            {lit && (
+              <circle cx={mx} cy={my} r={8} fill="none" stroke={decColor} strokeWidth={0.75} opacity={0}>
+                <animate attributeName="r" values={`8;${isDs ? 24 : 18};8`} dur={isDs ? "1.8s" : `${2.2 + mod.idx * 0.2}s`} repeatCount="indefinite" />
+                <animate attributeName="opacity" values={`${isDs ? 0.2 : 0.08};0;${isDs ? 0.2 : 0.08}`} dur={isDs ? "1.8s" : `${2.2 + mod.idx * 0.2}s`} repeatCount="indefinite" />
+              </circle>
+            )}
+            <circle
+              cx={mx} cy={my}
+              r={isDs ? 8 : lit ? 6 : 4}
+              fill={lit ? decColor : "#0E0E0E"}
+              opacity={isDs ? 0.75 : lit ? 0.55 : 0.15}
+              style={{ transition: "all 0.4s ease" }}
+            />
             <text
               x={mx}
-              y={my + (below ? 18 : -14)}
+              y={my + (below ? (compact ? 16 : 20) : (compact ? -12 : -16))}
               textAnchor="middle"
-              className="text-[9px] font-mono"
-              fill="#0E0E0E"
-              opacity={0.3}
+              className={`${compact ? "text-[7px]" : "text-[9px]"} font-mono`}
+              fill={lit ? decColor : "#0E0E0E"}
+              opacity={lit ? 0.5 : 0.2}
+              style={{ transition: "all 0.4s ease" }}
             >
               {mod.label}
             </text>
@@ -150,62 +270,34 @@ function SystemMap({ activeDecision, converging }: { activeDecision: Decision | 
         );
       })}
 
-      {/* Center node */}
-      <circle cx={CX} cy={CY} r={showDec ? 22 : 12} fill={showDec ? decColor : "#0E0E0E"} opacity={showDec ? 0.9 : 0.5} style={{ transition: "all 0.5s ease" }}>
-        {!showDec && (
-          <animate attributeName="r" values="12;14;12" dur="2.5s" repeatCount="indefinite" />
+      {/* Center node — the most prominent element */}
+      <circle
+        cx={CX} cy={CY}
+        r={isDeciding ? 28 : isConverging ? 20 : 16}
+        fill={isDeciding || isDownstream ? decColor : "#0E0E0E"}
+        opacity={isDeciding ? 0.95 : isDownstream ? 0.8 : 0.4}
+        style={{ transition: "all 0.5s ease" }}
+      >
+        {!isDeciding && !isDownstream && (
+          <animate attributeName="r" values="16;18;16" dur="3s" repeatCount="indefinite" />
         )}
       </circle>
 
-      {/* Decision label in center */}
-      {showDec && (
-        <text x={CX} y={CY + 4.5} textAnchor="middle" className="text-[13px] font-mono font-bold" fill="#FAF7F2">
-          {activeDecision}
+      {/* Decision text in center */}
+      {(isDeciding || isDownstream) && (
+        <text x={CX} y={CY + 5} textAnchor="middle" className={`${compact ? "text-[11px]" : "text-[14px]"} font-mono font-bold`} fill="#FAF7F2">
+          {state.decision}
+        </text>
+      )}
+
+      {/* Confidence — subtle, below center when deciding */}
+      {isDeciding && !compact && (
+        <text x={CX} y={CY + 46} textAnchor="middle" className="text-[8px] font-mono" fill="#0E0E0E" opacity={0.18}>
+          {state.confidence}% confidence
         </text>
       )}
     </svg>
   );
-}
-
-/* ─── Auto-cycling decision logic ──────────────────────── */
-
-const CYCLE_DECISIONS: Decision[] = ["PUSH", "TEST", "HOLD"];
-
-function useCyclingDecision() {
-  const [idx, setIdx] = useState(0);
-  const [converging, setConverging] = useState(false);
-  const [showing, setShowing] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    function cycle() {
-      if (!mounted) return;
-      // Start convergence
-      setConverging(true);
-      setTimeout(() => {
-        if (!mounted) return;
-        setShowing(true);
-        setTimeout(() => {
-          if (!mounted) return;
-          setShowing(false);
-          setConverging(false);
-          setTimeout(() => {
-            if (!mounted) return;
-            setIdx((i) => (i + 1) % CYCLE_DECISIONS.length);
-            cycle();
-          }, 2500);
-        }, 2000);
-      }, 1200);
-    }
-    const start = setTimeout(cycle, 1500);
-    return () => { mounted = false; clearTimeout(start); };
-  }, []);
-
-  return {
-    decision: CYCLE_DECISIONS[idx],
-    converging,
-    showing,
-  };
 }
 
 /* ─── Scenarios ─────────────────────────────────────────── */
@@ -226,7 +318,18 @@ export default function CampaignPage() {
   const [mode, setMode] = useState<"system" | "boot" | "converge" | "result">("system");
   const [output, setOutput] = useState<SystemOutput | null>(null);
   const [bootIdx, setBootIdx] = useState(0);
-  const cycling = useCyclingDecision();
+  const loop = useSystemLoop();
+
+  /* Fixed loop state for converge/result modes */
+  const fixedState: LoopState = output ? {
+    phase: mode === "converge" ? "converge" : "decide",
+    decision: output.decision,
+    confidence: output.confidence,
+    activeNodes: mode === "converge"
+      ? ["signal", "culture", "spend", "youtube", "lens"]
+      : output.decision !== "HOLD" ? ["spend"] : [],
+    downstream: mode === "result" && output.decision !== "HOLD" ? "spend" : null,
+  } : loop;
 
   const launch = useCallback((inp: CampaignInput) => {
     setOutput(generate(inp));
@@ -234,7 +337,6 @@ export default function CampaignPage() {
     setBootIdx(0);
   }, []);
 
-  /* Boot sequence */
   useEffect(() => {
     if (mode !== "boot") return;
     if (bootIdx < BOOT.length - 1) {
@@ -246,7 +348,6 @@ export default function CampaignPage() {
     }
   }, [mode, bootIdx]);
 
-  /* Converge → result */
   useEffect(() => {
     if (mode !== "converge") return;
     const t = setTimeout(() => setMode("result"), 2200);
@@ -254,8 +355,7 @@ export default function CampaignPage() {
   }, [mode]);
 
   const reset = useCallback(() => { setMode("system"); setOutput(null); setBootIdx(0); }, []);
-
-  const decisionColor = (d: Decision) => d === "PUSH" ? "text-signal" : d === "TEST" ? "text-sun" : "text-electric";
+  const decClr = (d: Decision) => d === "PUSH" ? "text-signal" : d === "TEST" ? "text-sun" : "text-electric";
 
   return (
     <main className="min-h-screen bg-paper">
@@ -268,12 +368,11 @@ export default function CampaignPage() {
         </div>
       </header>
 
-      {/* ── SYSTEM LAYER ──────────────────────────────── */}
       <AnimatePresence mode="wait">
+        {/* ── SYSTEM LAYER ────────────────────────────── */}
         {mode === "system" && (
           <motion.div key="system" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }}>
 
-            {/* Hero */}
             <section className="bg-ink text-paper pt-14 pb-4 md:pt-20 md:pb-6">
               <div className="mx-auto max-w-[960px] px-6 md:px-10">
                 <h1 className="font-display text-4xl md:text-6xl leading-[0.92] font-bold max-w-lg">
@@ -284,19 +383,15 @@ export default function CampaignPage() {
               </div>
             </section>
 
-            {/* System map — the hero */}
             <section className="mx-auto max-w-[960px] px-6 md:px-10 pt-8 md:pt-12">
-              <SystemMap
-                activeDecision={cycling.showing ? cycling.decision : null}
-                converging={cycling.converging}
-              />
+              <SystemMap state={loop} />
             </section>
 
-            {/* System statements */}
             <section className="mx-auto max-w-[960px] px-6 md:px-10 py-10 md:py-14">
               <div className="max-w-md mx-auto space-y-6">
                 {[
                   "The system reads signal, culture, and audience.",
+                  "It updates continuously.",
                   "It decides what to do.",
                   "It deploys capital automatically.",
                 ].map((line, i) => (
@@ -305,8 +400,8 @@ export default function CampaignPage() {
                     initial={{ opacity: 0, y: 8 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: i * 0.15 }}
-                    className="text-center text-sm text-ink/40 font-mono"
+                    transition={{ duration: 0.4, delay: i * 0.12 }}
+                    className="text-center text-sm text-ink/35 font-mono"
                   >
                     {line}
                   </motion.p>
@@ -314,10 +409,9 @@ export default function CampaignPage() {
               </div>
             </section>
 
-            {/* CTA → campaign demo */}
             <section className="mx-auto max-w-[960px] px-6 md:px-10 pb-16 md:pb-24">
               <div className="border-t border-ink/6 pt-8 text-center">
-                <p className="text-xs text-ink/20 mb-5 font-mono">See the system run a campaign</p>
+                <p className="text-xs text-ink/18 mb-5 font-mono">See the system run a campaign</p>
                 <div className="flex flex-col items-center gap-3 max-w-md mx-auto">
                   {SCENARIOS.map((sc) => (
                     <button
@@ -356,7 +450,7 @@ export default function CampaignPage() {
         {/* ── CONVERGE ────────────────────────────────── */}
         {mode === "converge" && output && (
           <motion.div key="converge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="mx-auto max-w-[960px] px-6 md:px-10 py-12 md:py-20">
-            <SystemMap activeDecision={output.decision} converging={true} />
+            <SystemMap state={fixedState} />
           </motion.div>
         )}
 
@@ -364,12 +458,10 @@ export default function CampaignPage() {
         {mode === "result" && output && (
           <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="mx-auto max-w-[960px] px-6 md:px-10">
 
-            {/* Compact system map — still alive */}
             <div className="pt-8 md:pt-12 max-w-[480px] mx-auto">
-              <SystemMap activeDecision={output.decision} converging={false} />
+              <SystemMap state={fixedState} compact />
             </div>
 
-            {/* Decision card */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -378,7 +470,7 @@ export default function CampaignPage() {
             >
               <div className="flex items-end justify-between gap-4 mb-2">
                 <div className="font-display font-bold text-4xl md:text-5xl leading-none flex items-center gap-2">
-                  <span className={decisionColor(output.decision)}>→</span>{output.decision}
+                  <span className={decClr(output.decision)}>→</span>{output.decision}
                 </div>
                 <div className="flex gap-4 text-xs">
                   <span className="text-paper/25">{output.confidence}%</span>
@@ -388,7 +480,6 @@ export default function CampaignPage() {
               <p className="text-paper/30 text-sm font-mono">{output.deployment}</p>
             </motion.div>
 
-            {/* Outcome */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -398,7 +489,6 @@ export default function CampaignPage() {
               <p className="text-xs text-ink/20 font-mono">{output.outcome}</p>
             </motion.div>
 
-            {/* Actions */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
