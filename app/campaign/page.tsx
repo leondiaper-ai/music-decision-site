@@ -290,24 +290,42 @@ const BOOT_DELAY = 480;
 
 /* ─── Page ──────────────────────────────────────────────── */
 
+/* ─── Scenarios ─────────────────────────────────────────── */
+
+interface Scenario {
+  label: string;
+  sub: string;
+  input: CampaignInput;
+}
+
+const SCENARIOS: Scenario[] = [
+  { label: "Breaking artist — momentum moment", sub: "340k monthly, accelerating growth, $15k budget", input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 } },
+  { label: "Established artist — major release", sub: "2.1M monthly, plateau, $35k budget", input: { trackName: "Cathedral", artistStage: "established", budget: 70 } },
+  { label: "Emerging artist — first traction", sub: "12k monthly, early traction, $3k budget", input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 } },
+];
+
+/* ─── Page ──────────────────────────────────────────────── */
+
 export default function CampaignPage() {
   const [step, setStep] = useState<"input" | "boot" | "run" | "done">("input");
-  const [input, setInput] = useState<CampaignInput>({ trackName: "", artistStage: "breaking", budget: 30 });
+  const [activeInput, setActiveInput] = useState<CampaignInput | null>(null);
   const [output, setOutput] = useState<SystemOutput | null>(null);
   const [bootIdx, setBootIdx] = useState(0);
   const [evIdx, setEvIdx] = useState(0);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [showCustom, setShowCustom] = useState(false);
+  const [customInput, setCustomInput] = useState<CampaignInput>({ trackName: "", artistStage: "breaking", budget: 30 });
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  const budgetVal = BUDGET_MAP(input.budget);
+  const customBudgetVal = BUDGET_MAP(customInput.budget);
 
-  const start = useCallback(() => {
-    if (!input.trackName.trim()) return;
-    setOutput(generate(input));
+  const launch = useCallback((inp: CampaignInput) => {
+    setActiveInput(inp);
+    setOutput(generate(inp));
     setStep("boot");
-    setBootIdx(0); setEvIdx(0); setExpanded({}); setActiveIdx(null);
-  }, [input]);
+    setBootIdx(0); setEvIdx(0); setExpanded({}); setActiveIdx(null); setShowCustom(false);
+  }, []);
 
   useEffect(() => {
     if (step !== "boot") return;
@@ -327,7 +345,7 @@ export default function CampaignPage() {
     }
   }, [step, evIdx]);
 
-  const reset = useCallback(() => { setStep("input"); setOutput(null); setBootIdx(0); setEvIdx(0); setExpanded({}); setActiveIdx(null); }, []);
+  const reset = useCallback(() => { setStep("input"); setOutput(null); setActiveInput(null); setBootIdx(0); setEvIdx(0); setExpanded({}); setActiveIdx(null); }, []);
   const toggle = (i: number) => setExpanded((e) => ({ ...e, [i]: !e[i] }));
 
   const visMoments = output ? output.moments.slice(0, step === "done" ? output.moments.length : evIdx + 1) : [];
@@ -355,30 +373,62 @@ export default function CampaignPage() {
       <div className="mx-auto max-w-[1120px] px-6 md:px-10 py-10 md:py-14">
         <AnimatePresence mode="wait">
           {step === "input" && (
-            <motion.div key="input" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.4 }} className="max-w-xl">
-              <div className="mb-7">
-                <label className="block text-sm font-medium text-ink/55 mb-2">Track name</label>
-                <input type="text" value={input.trackName} onChange={(e) => setInput((p) => ({ ...p, trackName: e.target.value }))} placeholder="e.g. Midnight Drive" className="w-full rounded-xl border border-ink/15 bg-cream px-5 py-3.5 text-base text-ink placeholder:text-ink/25 focus:outline-none focus:border-ink/40 transition-colors" />
+            <motion.div key="input" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.4 }} className="max-w-2xl">
+              <p className="text-sm text-ink/45 mb-6">Pick a campaign. Watch the system run.</p>
+
+              <div className="grid gap-3 mb-8">
+                {SCENARIOS.map((sc) => (
+                  <button
+                    key={sc.label}
+                    onClick={() => launch(sc.input)}
+                    className="group w-full text-left rounded-xl border border-ink/12 hover:border-ink/25 px-5 py-4 transition-colors flex items-center justify-between gap-4"
+                  >
+                    <div>
+                      <div className="text-sm font-medium text-ink/75 group-hover:text-ink transition-colors">{sc.label}</div>
+                      <div className="text-xs text-ink/35 mt-0.5">{sc.sub}</div>
+                    </div>
+                    <span className="text-ink/15 group-hover:text-signal transition-colors text-sm">→</span>
+                  </button>
+                ))}
               </div>
-              <div className="mb-7">
-                <label className="block text-sm font-medium text-ink/55 mb-2">Artist stage</label>
-                <div className="flex gap-2.5">
-                  {([["emerging","Emerging"],["breaking","Breaking"],["established","Established"]] as [ArtistStage,string][]).map(([v,l]) => (
-                    <button key={v} onClick={() => setInput((p) => ({ ...p, artistStage: v }))} className={`flex-1 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-colors ${input.artistStage === v ? "bg-ink text-paper border-ink" : "border-ink/15 text-ink/60 hover:border-ink/30"}`}>{l}</button>
-                  ))}
-                </div>
+
+              {/* Custom setup — de-prioritised */}
+              <div className="border-t border-ink/8 pt-5">
+                <button onClick={() => setShowCustom((s) => !s)} className="text-xs text-ink/25 hover:text-ink/45 transition-colors">
+                  <span className="inline-block transition-transform mr-1" style={{ transform: showCustom ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
+                  Custom setup
+                </button>
+                <AnimatePresence>
+                  {showCustom && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                      <div className="pt-4 max-w-md space-y-5">
+                        <div>
+                          <label className="block text-xs font-medium text-ink/40 mb-1.5">Track name</label>
+                          <input type="text" value={customInput.trackName} onChange={(e) => setCustomInput((p) => ({ ...p, trackName: e.target.value }))} placeholder="e.g. Midnight Drive" className="w-full rounded-lg border border-ink/12 bg-cream px-4 py-2.5 text-sm text-ink placeholder:text-ink/20 focus:outline-none focus:border-ink/30 transition-colors" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-ink/40 mb-1.5">Artist stage</label>
+                          <div className="flex gap-2">
+                            {([["emerging","Emerging"],["breaking","Breaking"],["established","Established"]] as [ArtistStage,string][]).map(([v,l]) => (
+                              <button key={v} onClick={() => setCustomInput((p) => ({ ...p, artistStage: v }))} className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${customInput.artistStage === v ? "bg-ink text-paper border-ink" : "border-ink/12 text-ink/50 hover:border-ink/25"}`}>{l}</button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-ink/40 mb-1.5">Budget</label>
+                          <div className="flex items-center gap-3">
+                            <input type="range" min={0} max={100} value={customInput.budget} onChange={(e) => setCustomInput((p) => ({ ...p, budget: Number(e.target.value) }))} className="flex-1 h-1.5 rounded-full appearance-none bg-ink/8 accent-ink cursor-pointer" />
+                            <span className="font-display font-bold text-sm min-w-[4rem] text-right">{fmt(customBudgetVal)}</span>
+                          </div>
+                        </div>
+                        <button onClick={() => { if (customInput.trackName.trim()) launch(customInput); }} disabled={!customInput.trackName.trim()} className="group inline-flex items-center gap-2 rounded-full bg-ink text-paper px-5 py-2.5 text-xs font-medium hover:bg-signal transition-colors disabled:opacity-20 disabled:cursor-not-allowed">
+                          Run System <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <div className="mb-9">
-                <label className="block text-sm font-medium text-ink/55 mb-2">Budget</label>
-                <div className="flex items-center gap-4">
-                  <input type="range" min={0} max={100} value={input.budget} onChange={(e) => setInput((p) => ({ ...p, budget: Number(e.target.value) }))} className="flex-1 h-2 rounded-full appearance-none bg-ink/10 accent-ink cursor-pointer" />
-                  <span className="font-display font-bold text-lg min-w-[4.5rem] text-right">{fmt(budgetVal)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-ink/30 mt-1"><span>$500</span><span>$50k</span></div>
-              </div>
-              <button onClick={start} disabled={!input.trackName.trim()} className="group inline-flex items-center gap-2 rounded-full bg-ink text-paper px-6 py-3 text-sm font-medium hover:bg-signal transition-colors disabled:opacity-25 disabled:cursor-not-allowed">
-                Run System <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-              </button>
             </motion.div>
           )}
 
@@ -531,7 +581,7 @@ export default function CampaignPage() {
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-mint animate-pulse" />
                   <span className="font-display font-bold text-sm">System active</span>
-                  <span className="text-paper/20 text-xs font-mono">{input.trackName} · {input.artistStage} · {fmt(budgetVal)}</span>
+                  <span className="text-paper/20 text-xs font-mono">{activeInput?.trackName} · {activeInput?.artistStage} · {fmt(BUDGET_MAP(activeInput?.budget ?? 0))}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs">
                   <span className="text-paper/30"><span className={dirColor(output.context.growthDir)}>{dirArrow(output.context.growthDir)}</span> {output.context.growth}</span>
