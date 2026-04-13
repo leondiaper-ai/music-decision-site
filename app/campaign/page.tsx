@@ -628,7 +628,7 @@ function SystemMap({ state, compact, displayConfidence, mode, output }: {
 
 /* ─── Live processing feed (synced to loop) ─────────────── */
 
-type FeedTag = "signal" | "culture" | "lens" | "decide" | "deploy";
+type FeedTag = "signal" | "culture" | "lens" | "memory" | "decide" | "deploy";
 interface FeedEntry { id: number; tag: FeedTag; text: string }
 
 const SIGNAL_TEXTS = [
@@ -647,6 +647,13 @@ const LENS_TEXTS = [
   "audience lock · breaking · 340k monthly",
   "artist cohort match · 82% overlap",
   "track fingerprint · uptempo / hook at 0:14",
+];
+const MEMORY_TEXTS = [
+  "similar campaign detected · 14mo ago",
+  "prior test→push outcome · +0.6 confidence",
+  "historical rollout pattern matched",
+  "cohort behaviour · recurring · 3 priors",
+  "catalogue precedent · comparable trajectory",
 ];
 const DEPLOY_TEXTS = [
   "capital routing · 40/35/25 split",
@@ -672,7 +679,21 @@ function useLiveFeed(state: LoopState): FeedEntry[] {
     else if (state.phase === "decide") entry = { id: newId, tag: "decide", text: `${state.decision} · ${state.confidence}% confidence` };
     else if (state.phase === "downstream") entry = { id: newId, tag: "deploy", text: pick(DEPLOY_TEXTS) };
 
-    if (entry) setFeed((prev) => [...prev.slice(-5), entry!]);
+    // Memory entry — woven in beside converge/decide phases, so the feed reads
+    // like the system is referencing what it's seen before.
+    let memoryEntry: FeedEntry | null = null;
+    if (state.phase === "converge" || state.phase === "decide") {
+      memoryEntry = { id: ++counter.current, tag: "memory", text: pick(MEMORY_TEXTS) };
+    }
+
+    if (entry || memoryEntry) {
+      setFeed((prev) => {
+        const next = [...prev];
+        if (memoryEntry) next.push(memoryEntry);
+        if (entry) next.push(entry);
+        return next.slice(-6);
+      });
+    }
   }, [state.phase, state.decision, state.confidence]);
 
   return feed;
@@ -681,7 +702,7 @@ function useLiveFeed(state: LoopState): FeedEntry[] {
 function LiveFeed({ feed, decision }: { feed: FeedEntry[]; decision: Decision }) {
   const decColor = decision === "PUSH" ? "text-signal" : decision === "TEST" ? "text-sun" : "text-electric";
   const tagLabel: Record<FeedTag, string> = {
-    signal: "signal", culture: "culture", lens: "lens", decide: "decide", deploy: "deploy",
+    signal: "signal", culture: "culture", lens: "lens", memory: "memory", decide: "decide", deploy: "deploy",
   };
   // Always reserve 6 rows to prevent layout shift
   const rows = feed.slice(-6);
@@ -697,6 +718,7 @@ function LiveFeed({ feed, decision }: { feed: FeedEntry[]; decision: Decision })
           const opacity = ageFromTop === 0 ? 1 : ageFromTop === 1 ? 0.8 : ageFromTop === 2 ? 0.55 : 0.3;
           const isDecide = e.tag === "decide";
           const isDeploy = e.tag === "deploy";
+          const isMemory = e.tag === "memory";
           return (
             <motion.div
               key={e.id}
@@ -706,8 +728,8 @@ function LiveFeed({ feed, decision }: { feed: FeedEntry[]; decision: Decision })
               transition={{ duration: 0.25 }}
               className="flex items-baseline gap-3"
             >
-              <span className="text-ink/20 w-[54px] shrink-0">[{tagLabel[e.tag]}]</span>
-              <span className={isDecide ? `${decColor} font-semibold` : isDeploy ? "text-mint" : "text-ink/55"}>
+              <span className={`w-[54px] shrink-0 ${isMemory ? "text-ink/35 italic" : "text-ink/20"}`}>[{tagLabel[e.tag]}]</span>
+              <span className={isDecide ? `${decColor} font-semibold` : isDeploy ? "text-mint" : isMemory ? "text-ink/40 italic" : "text-ink/55"}>
                 {isDecide ? "→ " : ""}{e.text}
               </span>
             </motion.div>
@@ -1100,7 +1122,8 @@ export default function CampaignPage() {
             One system.<br />
             <span className="italic font-light text-signal">Every decision.</span>
           </h1>
-          <p className="mt-3 text-sm text-paper/25 max-w-sm">Signal, culture, audience, capital. Connected. Continuous.</p>
+          <p className="mt-3 text-sm text-paper/25 max-w-sm">Signal, culture, audience, memory. Connected. Continuous.</p>
+          <p className="mt-1.5 font-mono text-[11px] text-paper/18 max-w-sm">Each campaign makes it sharper.</p>
         </div>
       </section>
 
@@ -1254,8 +1277,11 @@ export default function CampaignPage() {
                   <p className="font-mono text-[10px] text-ink/30 uppercase tracking-[0.14em]">scenario resolved</p>
                   <p className="mt-1 text-[13px] text-ink/55 italic">{activeScenario?.situation}</p>
                 </div>
-                <p className="text-center font-mono text-[10.5px] text-ink/40 mb-6">
+                <p className="text-center font-mono text-[10.5px] text-ink/40 mb-1.5">
                   projected · {output.outcome}
+                </p>
+                <p className="text-center font-mono text-[10px] text-ink/25 italic mb-6">
+                  confidence adjusted using prior campaign outcomes
                 </p>
                 <div className="flex justify-center gap-3">
                   <button
