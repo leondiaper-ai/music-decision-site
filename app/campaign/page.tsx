@@ -840,11 +840,11 @@ interface LensData {
 }
 
 const AMBIENT_LENS: LensData = {
-  artistLabel: "ambient cohort",
+  artistLabel: "Audience signal — continuous read",
   cohortMatch: 74,
-  catalogueDepth: "mixed pool · rolling",
-  trackFingerprint: "genre-agnostic",
-  reasoning: "baseline catalogue intelligence",
+  catalogueDepth: "save rate · velocity",
+  trackFingerprint: "monthly listeners",
+  reasoning: "catalogue signal alignment",
 };
 
 function FragmentLens({ active, data }: { active: boolean; data: LensData }) {
@@ -964,11 +964,11 @@ const SCENARIOS: Scenario[] = [
     likelyDecision: "PUSH",
     input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 },
     lens: {
-      artistLabel: "Midnight Drive · breaking",
+      artistLabel: "Audience — rising listeners, high velocity",
       cohortMatch: 82,
-      catalogueDepth: "3 releases · 9mo",
-      trackFingerprint: "uptempo · hook @ 0:14",
-      reasoning: "cohort overlaps active scene · TikTok audience primed",
+      catalogueDepth: "340k monthly · save rate 5.8%",
+      trackFingerprint: "velocity +18% MoM",
+      reasoning: "audience + catalogue alignment",
     },
   },
   {
@@ -978,11 +978,11 @@ const SCENARIOS: Scenario[] = [
     likelyDecision: "PUSH",
     input: { trackName: "Cathedral", artistStage: "established", budget: 70 },
     lens: {
-      artistLabel: "Cathedral · established",
+      artistLabel: "Audience — established listeners, stable velocity",
       cohortMatch: 91,
-      catalogueDepth: "11 releases · 6yr",
-      trackFingerprint: "mid-tempo · chorus @ 0:42",
-      reasoning: "catalogue gravity + known cohort · deploy at scale",
+      catalogueDepth: "2.1M monthly · save rate 6.2%",
+      trackFingerprint: "algorithmic lift",
+      reasoning: "catalogue gravity · repeat-listener base",
     },
   },
   {
@@ -992,11 +992,11 @@ const SCENARIOS: Scenario[] = [
     likelyDecision: "TEST",
     input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 },
     lens: {
-      artistLabel: "Bedroom Floor · emerging",
+      artistLabel: "Audience — early listeners, building save rate",
       cohortMatch: 58,
-      catalogueDepth: "1 release · 3mo",
-      trackFingerprint: "lo-fi · hook @ 0:28",
-      reasoning: "save curve promising · cohort unproven · test narrow",
+      catalogueDepth: "12k monthly · save rate 4.1%",
+      trackFingerprint: "velocity +32% MoM",
+      reasoning: "save curve promising · velocity unproven",
     },
   },
 ];
