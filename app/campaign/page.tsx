@@ -15,34 +15,18 @@ interface CampaignInput {
   budget: number;
 }
 
-interface Reasoning {
-  signal: string;
-  culture: string;
-  artist: string;
-}
-
-interface Moment {
-  day: number;
-  streams: number;
-  saves: number;
-  action: string;
-  type: "decision" | "deploy" | "execute" | "monitor" | "adjust";
-  reasoning: Reasoning;
-  confidence?: number;
-  risk?: "Low" | "Medium" | "High";
-  tool?: { label: string; href: string; external?: boolean };
-}
-
 interface SystemOutput {
   decision: Decision;
-  moments: Moment[];
+  confidence: number;
+  risk: "Low" | "Medium" | "High";
+  deployment: string;
+  outcome: string;
 }
 
-/* ─── Engine ────────────────────────────────────────────── */
+/* ─── Engine (simplified for system layer) ─────────────── */
 
 const BUDGET_MAP = (pct: number) => Math.round(500 + (pct / 100) * 49500);
 function fmt(n: number) { return n >= 1000 ? `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `$${n}`; }
-function fmtK(n: number) { return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`; }
 
 function generate(input: CampaignInput): SystemOutput {
   const budget = BUDGET_MAP(input.budget);
@@ -60,104 +44,23 @@ function generate(input: CampaignInput): SystemOutput {
   const conf = decision === "PUSH" ? (isEs ? 87 : 81) : decision === "TEST" ? (isEm && budget < 5000 ? 72 : 68) : 64;
   const risk: "Low" | "Medium" | "High" = decision === "PUSH" ? (isEs ? "Low" : "Medium") : decision === "TEST" ? "Medium" : "High";
 
+  const deployment = decision === "PUSH"
+    ? `${fmt(Math.round(budget * 0.4))} paid · ${fmt(Math.round(budget * 0.35))} content · ${fmt(Math.round(budget * 0.25))} creators`
+    : decision === "TEST"
+    ? `${fmt(Math.round(budget * 0.4))} testing · ${fmt(Math.round(budget * 0.6))} held`
+    : `${fmt(budget)} preserved`;
+
+  const m = decision === "PUSH" ? 1.6 : decision === "TEST" ? 1.15 : 0.95;
   const base = isEs ? 45000 : isEm ? 800 : 8000;
   const sv = isEs ? 5.1 : isEm ? 3.2 : 4.1;
-  const m = decision === "PUSH" ? 1.6 : decision === "TEST" ? 1.15 : 0.95;
+  const endStreams = Math.round(base * m * (decision === "PUSH" ? 2.1 : decision === "TEST" ? 1.5 : 0.65));
+  const endSaves = sv + (decision === "PUSH" ? 2.5 : decision === "TEST" ? 1.4 : -1.0);
+  const outcome = `${endStreams >= 1000 ? `${(endStreams / 1000).toFixed(1)}k` : endStreams} daily · ${endSaves.toFixed(1)}% saves · 28 days`;
 
-  const tone = isEm ? "lo-fi, raw" : isEs ? "cinematic" : "energetic, narrative";
-  const culture = isEm ? "discovery" : isEs ? "scale" : "momentum";
-  const growth = isEm ? "early traction" : isEs ? "plateau" : "accelerating";
-  const fans = isEm ? "12k" : isEs ? "2.1M" : "340k";
-
-  const moments: Moment[] = [
-    {
-      day: 0, streams: base, saves: sv, type: "decision",
-      action: decision === "PUSH" ? `PUSH — deploy ${fmt(budget)}` : decision === "TEST" ? `TEST — validate before committing ${fmt(budget)}` : `HOLD — ${fmt(budget)} preserved`,
-      confidence: conf, risk,
-      reasoning: {
-        signal: isEs ? `Save 5.1%, reach +24%, velocity high` : isEm ? `Save 3.2%, reach −12%, engagement high` : `Save 4.1%, reach +8%, engagement high`,
-        culture: `${culture} frame — ${tone} positioning`,
-        artist: `${fans} monthly, ${growth}`,
-      },
-      tool: { label: "Artist & Track Lens", href: "/lens" },
-    },
-    {
-      day: 1, streams: Math.round(base * 1.15), saves: sv + 0.2, type: "execute",
-      action: decision === "PUSH"
-        ? isEs ? "System set execution — hero assets, editorial, simultaneous launch"
-          : isEm ? "System set execution — raw content, authentic voices, organic-first"
-          : "System set execution — narrative assets, genre-adjacent creators, 7-day stagger"
-        : decision === "TEST" ? `System set execution — ${tone.split(",")[0]} test formats, micro-creators` : "System set execution — minimal output, research mode",
-      reasoning: {
-        signal: "Execution follows from signal read",
-        culture: `${culture} frame shapes content direction and creator strategy`,
-        artist: `${growth} state determines timing and scale`,
-      },
-      tool: { label: "Campaign Timeline", href: "https://campaign-timeline-viewer.vercel.app", external: true },
-    },
-    {
-      day: 3, streams: Math.round(base * m * 0.9), saves: sv + (decision === "PUSH" ? 0.8 : 0.1), type: "deploy",
-      action: decision === "PUSH"
-        ? `System deployed capital — ${fmt(Math.round(budget * 0.4))} paid, ${fmt(Math.round(budget * 0.35))} content, ${fmt(Math.round(budget * 0.25))} creators + reserve`
-        : decision === "TEST"
-        ? `System deployed capital — ${fmt(Math.round(budget * 0.4))} content testing, ${fmt(Math.round(budget * 0.6))} held`
-        : "System held all capital — no deployment",
-      reasoning: {
-        signal: decision === "PUSH" ? "Signal confirms audience — extend momentum" : decision === "TEST" ? "Signal promising, not confirmed — test first" : "Insufficient signal",
-        culture: decision === "PUSH" ? `${tone} assets, voices matching ${culture} positioning` : `Organic validation within ${culture} frame`,
-        artist: decision === "PUSH" ? `${growth} supports aggressive deployment` : `${growth} requires caution`,
-      },
-      tool: decision !== "HOLD" ? { label: "YouTube Coach", href: "https://youtube-campaign-coach.vercel.app", external: true } : undefined,
-    },
-    {
-      day: 5, streams: Math.round(base * m * 1.05), saves: sv + (decision === "PUSH" ? 1.3 : decision === "TEST" ? 0.3 : -0.1), type: "monitor",
-      action: decision === "PUSH" ? `Monitoring — saves climbing to ${(sv + 1.3).toFixed(1)}%, streams up` : decision === "TEST" ? "Monitoring — organic response steady" : "Monitoring — no organic traction",
-      reasoning: { signal: "Tracking against baseline", culture: "No intervention — observing", artist: "Health stable" },
-    },
-    {
-      day: 7, streams: Math.round(base * m * 1.15), saves: sv + (decision === "PUSH" ? 1.5 : decision === "TEST" ? 0.6 : -0.2), type: "monitor",
-      action: decision === "PUSH" ? `System evaluated — streams +${Math.round((m * 1.15 - 1) * 100)}%, saves ${(sv + 1.5).toFixed(1)}%`
-        : decision === "TEST" ? `System evaluated — saves ${(sv + 0.6).toFixed(1)}%, mixed format response` : "System evaluated — no breakthrough",
-      reasoning: { signal: "7-day data cross-referenced", culture: `Performance within ${culture} frame`, artist: `Health baseline at ${growth}` },
-      tool: { label: "Artist & Track Lens", href: "/lens" },
-    },
-    {
-      day: 10, streams: Math.round(base * m * (decision === "PUSH" ? 1.4 : decision === "TEST" ? 1.1 : 0.85)), saves: sv + (decision === "PUSH" ? 1.8 : decision === "TEST" ? 0.8 : -0.5), type: "monitor",
-      action: decision === "PUSH" ? "Monitoring — sustained, no drop-off" : decision === "TEST" ? "Monitoring — saves climbing, narrative outperforming" : "Monitoring — flat, holding",
-      reasoning: { signal: "Trend continuing", culture: "Frame holding", artist: "No health change" },
-    },
-    {
-      day: 14, streams: Math.round(base * m * (decision === "PUSH" ? 1.65 : decision === "TEST" ? 1.2 : 0.75)), saves: sv + (decision === "PUSH" ? 2.1 : decision === "TEST" ? 1.0 : -0.7), type: "adjust",
-      action: decision === "PUSH" ? `System adjusted — reallocating ${fmt(Math.round(budget * 0.1))} reserve to paid` : decision === "TEST" ? `System adjusted — save rate crossed ${(sv + 1.0).toFixed(1)}%, upgrading to PUSH` : "System adjusted — extending hold",
-      reasoning: {
-        signal: decision === "PUSH" ? `Streams +${Math.round((m * 1.65 - 1) * 100)}%, saves ${(sv + 2.1).toFixed(1)}%` : decision === "TEST" ? "Threshold crossed — evidence supports deployment" : "No organic demand",
-        culture: decision === "PUSH" ? "Momentum confirmed in cultural frame" : decision === "TEST" ? "Cultural frame validated through testing" : "Frame requires stronger signal",
-        artist: decision === "PUSH" ? "Deploying remaining capital" : decision === "TEST" ? "Artist health supports upgrade" : "Continuing research",
-      },
-    },
-    {
-      day: 21, streams: Math.round(base * m * (decision === "PUSH" ? 1.9 : decision === "TEST" ? 1.35 : 0.7)), saves: sv + (decision === "PUSH" ? 2.3 : decision === "TEST" ? 1.2 : -0.8), type: "monitor",
-      action: decision === "PUSH" ? `Monitoring — sustaining at ${fmtK(Math.round(base * m * 1.9))} daily` : decision === "TEST" ? "Monitoring — post-upgrade ramp" : "Monitoring — hold continues",
-      reasoning: { signal: "Continuous evaluation", culture: "Active", artist: "Stable" },
-    },
-    {
-      day: 28, streams: Math.round(base * m * (decision === "PUSH" ? 2.1 : decision === "TEST" ? 1.5 : 0.65)), saves: sv + (decision === "PUSH" ? 2.5 : decision === "TEST" ? 1.4 : -1.0), type: "monitor",
-      action: decision === "PUSH" ? `28-day — ${fmtK(Math.round(base * m * 2.1))} daily, saves ${(sv + 2.5).toFixed(1)}%`
-        : decision === "TEST" ? `28-day — ${fmtK(Math.round(base * m * 1.5))} daily, test validated`
-        : `28-day — ${fmtK(Math.round(base * m * 0.65))} daily, hold maintained`,
-      reasoning: { signal: "Full cycle complete", culture: "System begins next window", artist: "Health re-evaluated" },
-    },
-  ];
-
-  return { decision, moments };
+  return { decision, confidence: conf, risk, deployment, outcome };
 }
 
-/* ─── Helpers ───────────────────────────────────────────── */
-
-function decisionColor(d: Decision) { return d === "PUSH" ? "text-signal" : d === "TEST" ? "text-sun" : "text-electric"; }
-function dotFill(t: Moment["type"]) { return t === "decision" ? "bg-ink" : t === "deploy" ? "bg-mint" : t === "execute" ? "bg-electric" : t === "adjust" ? "bg-signal" : "bg-ink/15"; }
-
-/* ─── Module → moment wiring ──────────────────────────── */
+/* ─── Modules ──────────────────────────────────────────── */
 
 const MODULES = [
   { id: "signal", label: "Signal Monitor", angle: -90 },
@@ -167,44 +70,22 @@ const MODULES = [
   { id: "lens", label: "Artist & Track Lens", angle: 198 },
 ] as const;
 
-type ModuleId = (typeof MODULES)[number]["id"];
+/* ─── Hero System Map ──────────────────────────────────── */
 
-const TYPE_TO_MODULES: Record<Moment["type"], ModuleId[]> = {
-  decision: ["signal", "culture", "lens", "spend", "youtube"],
-  execute: ["culture", "lens"],
-  deploy: ["spend", "youtube"],
-  monitor: ["signal"],
-  adjust: ["signal", "culture", "spend"],
-};
-
-/* ─── Persistent Ecosystem ─────────────────────────────── */
-
-function LiveSystem({
-  decision,
-  activeModules,
-  intro,
-}: {
-  decision: Decision;
-  activeModules: ModuleId[];
-  intro: boolean;
-}) {
-  const CX = 240, CY = 100, R = 72;
-  const decColor = decision === "PUSH" ? "#FF4A1C" : decision === "TEST" ? "#FFD24C" : "#2C25FF";
+function SystemMap({ activeDecision, converging }: { activeDecision: Decision | null; converging: boolean }) {
+  const CX = 300, CY = 200, R = 140;
+  const decColor = !activeDecision ? "#0E0E0E" : activeDecision === "PUSH" ? "#FF4A1C" : activeDecision === "TEST" ? "#FFD24C" : "#2C25FF";
+  const showDec = activeDecision && converging;
 
   return (
-    <svg viewBox="0 0 480 200" className="w-full max-w-[520px] mx-auto" preserveAspectRatio="xMidYMid meet">
+    <svg viewBox="0 0 600 400" className="w-full max-w-[640px] mx-auto" preserveAspectRatio="xMidYMid meet">
       <defs>
-        {MODULES.map((mod, i) => {
-          const rad = (mod.angle * Math.PI) / 180;
-          const mx = CX + Math.cos(rad) * R;
-          const my = CY + Math.sin(rad) * R;
-          return (
-            <linearGradient key={`lg-${i}`} id={`lg-${i}`} x1={mx} y1={my} x2={CX} y2={CY} gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#0E0E0E" stopOpacity={0.04} />
-              <stop offset="100%" stopColor="#0E0E0E" stopOpacity={0.1} />
-            </linearGradient>
-          );
-        })}
+        {MODULES.map((_, i) => (
+          <linearGradient key={`lg-${i}`} id={`lg-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#0E0E0E" stopOpacity={0.04} />
+            <stop offset="100%" stopColor="#0E0E0E" stopOpacity={0.12} />
+          </linearGradient>
+        ))}
       </defs>
 
       {/* Connection lines */}
@@ -212,31 +93,29 @@ function LiveSystem({
         const rad = (mod.angle * Math.PI) / 180;
         const mx = CX + Math.cos(rad) * R;
         const my = CY + Math.sin(rad) * R;
-        const active = activeModules.includes(mod.id);
         return (
           <line
             key={`c-${i}`}
             x1={mx} y1={my} x2={CX} y2={CY}
-            stroke={active ? decColor : `url(#lg-${i})`}
-            strokeWidth={active ? 1.5 : 0.75}
-            opacity={active ? 0.4 : 1}
-            style={{ transition: "all 0.4s ease" }}
+            stroke={converging ? decColor : `url(#lg-${i})`}
+            strokeWidth={converging ? 1.5 : 0.75}
+            opacity={converging ? 0.35 : 1}
+            style={{ transition: "all 0.6s ease" }}
           />
         );
       })}
 
-      {/* Ambient signal dots — always moving */}
+      {/* Signal dots — always moving inward */}
       {MODULES.map((mod, i) => {
         const rad = (mod.angle * Math.PI) / 180;
         const mx = CX + Math.cos(rad) * R;
         const my = CY + Math.sin(rad) * R;
-        const active = activeModules.includes(mod.id);
         return (
-          <circle key={`sig-${i}`} r={active ? 2.5 : 1.5} fill={active ? decColor : "#0E0E0E"} opacity={active ? 0.5 : 0.1}>
+          <circle key={`s-${i}`} r={converging ? 3 : 1.5} fill={converging ? decColor : "#0E0E0E"} opacity={converging ? 0.45 : 0.12}>
             <animateMotion
-              dur={active ? "1s" : "3s"}
+              dur={converging ? "0.8s" : "3.5s"}
               repeatCount="indefinite"
-              begin={`${i * 0.5}s`}
+              begin={`${i * 0.6}s`}
               path={`M${mx - CX},${my - CY} L0,0`}
             />
           </circle>
@@ -248,25 +127,22 @@ function LiveSystem({
         const rad = (mod.angle * Math.PI) / 180;
         const mx = CX + Math.cos(rad) * R;
         const my = CY + Math.sin(rad) * R;
-        const active = activeModules.includes(mod.id);
+        const below = mod.angle > 0 && mod.angle < 180;
         return (
           <g key={mod.id}>
-            {/* Pulse ring when active */}
-            {active && (
-              <circle cx={mx} cy={my} r={8} fill="none" stroke={decColor} strokeWidth={0.75} opacity={0.15}>
-                <animate attributeName="r" values="8;16;8" dur="1.5s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.15;0;0.15" dur="1.5s" repeatCount="indefinite" />
-              </circle>
-            )}
-            <circle cx={mx} cy={my} r={active ? 4.5 : 3.5} fill={active ? decColor : "#0E0E0E"} opacity={active ? 0.7 : 0.2} style={{ transition: "all 0.3s ease" }} />
+            {/* Pulse ring */}
+            <circle cx={mx} cy={my} r={10} fill="none" stroke={converging ? decColor : "#0E0E0E"} strokeWidth={0.5} opacity={0}>
+              <animate attributeName="r" values="10;22;10" dur={`${2.5 + i * 0.3}s`} repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.06;0;0.06" dur={`${2.5 + i * 0.3}s`} repeatCount="indefinite" />
+            </circle>
+            <circle cx={mx} cy={my} r={converging ? 6 : 5} fill={converging ? decColor : "#0E0E0E"} opacity={converging ? 0.6 : 0.35} style={{ transition: "all 0.5s ease" }} />
             <text
               x={mx}
-              y={my + (mod.angle > 0 && mod.angle < 180 ? 14 : -10)}
+              y={my + (below ? 18 : -14)}
               textAnchor="middle"
-              className="text-[7px] font-mono"
-              fill={active ? decColor : "#0E0E0E"}
-              opacity={active ? 0.45 : 0.15}
-              style={{ transition: "all 0.3s ease" }}
+              className="text-[9px] font-mono"
+              fill="#0E0E0E"
+              opacity={0.3}
             >
               {mod.label}
             </text>
@@ -274,121 +150,112 @@ function LiveSystem({
         );
       })}
 
-      {/* Center — always shows decision */}
-      <circle cx={CX} cy={CY} r={intro ? 14 : 10} fill={decColor} opacity={0.85} style={{ transition: "all 0.5s ease" }}>
-        <animate attributeName="r" values={intro ? "14;16;14" : "10;11;10"} dur="2s" repeatCount="indefinite" />
+      {/* Center node */}
+      <circle cx={CX} cy={CY} r={showDec ? 22 : 12} fill={showDec ? decColor : "#0E0E0E"} opacity={showDec ? 0.9 : 0.5} style={{ transition: "all 0.5s ease" }}>
+        {!showDec && (
+          <animate attributeName="r" values="12;14;12" dur="2.5s" repeatCount="indefinite" />
+        )}
       </circle>
-      <text x={CX} y={CY + 3.5} textAnchor="middle" className="text-[9px] font-mono font-bold" fill="#FAF7F2">
-        {decision}
-      </text>
+
+      {/* Decision label in center */}
+      {showDec && (
+        <text x={CX} y={CY + 4.5} textAnchor="middle" className="text-[13px] font-mono font-bold" fill="#FAF7F2">
+          {activeDecision}
+        </text>
+      )}
     </svg>
   );
 }
 
-/* ─── Graph ─────────────────────────────────────────────── */
+/* ─── Auto-cycling decision logic ──────────────────────── */
 
-function Graph({ moments, activeIdx, onHover }: { moments: Moment[]; activeIdx: number | null; onHover: (i: number | null) => void }) {
-  const W = 720, H = 160, PX = 36, PY = 16;
-  const maxS = Math.max(...moments.map((m) => m.streams)) * 1.1;
-  const maxD = moments[moments.length - 1].day || 1;
-  const px = (d: number) => PX + (d / maxD) * (W - PX * 2);
-  const py = (s: number) => PY + (1 - s / maxS) * (H - PY * 2);
-  const pts = moments.map((mo) => `${px(mo.day)},${py(mo.streams)}`).join(" ");
-  const area = `${px(0)},${py(0)} ${pts} ${px(moments[moments.length - 1].day)},${py(0)}`;
+const CYCLE_DECISIONS: Decision[] = ["PUSH", "TEST", "HOLD"];
 
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet">
-      {[0.25, 0.5, 0.75].map((f) => (
-        <line key={f} x1={PX} y1={py(maxS * f)} x2={W - PX} y2={py(maxS * f)} stroke="currentColor" className="text-ink/[0.03]" strokeWidth={0.5} />
-      ))}
-      <polygon points={area} className="fill-ink/[0.02]" />
-      <polyline points={pts} fill="none" stroke="currentColor" className="text-ink/15" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
-      {moments.map((mo, i) => {
-        const isA = activeIdx === i;
-        const cx = px(mo.day), cy = py(mo.streams);
-        return (
-          <g key={i} onMouseEnter={() => onHover(i)} onMouseLeave={() => onHover(null)} className="cursor-pointer">
-            <circle cx={cx} cy={cy} r={14} fill="transparent" />
-            <circle cx={cx} cy={cy} r={isA ? 4.5 : mo.type === "monitor" ? 2 : 3}
-              className={`transition-all duration-150 ${isA ? "fill-signal" : mo.type === "decision" ? "fill-ink" : mo.type === "deploy" ? "fill-mint" : mo.type === "adjust" ? "fill-signal/60" : "fill-ink/12"}`} />
-            {isA && (
-              <>
-                <line x1={cx} y1={cy + 6} x2={cx} y2={H - PY} stroke="currentColor" className="text-signal/12" strokeWidth={0.5} strokeDasharray="2,2" />
-                <text x={cx} y={cy - 12} textAnchor="middle" className="text-[9px] font-mono fill-ink/50">{fmtK(mo.streams)} · {mo.saves.toFixed(1)}%</text>
-                <text x={cx} y={H - PY + 12} textAnchor="middle" className="text-[7px] font-mono fill-ink/25">Day {mo.day}</text>
-              </>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
+function useCyclingDecision() {
+  const [idx, setIdx] = useState(0);
+  const [converging, setConverging] = useState(false);
+  const [showing, setShowing] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    function cycle() {
+      if (!mounted) return;
+      // Start convergence
+      setConverging(true);
+      setTimeout(() => {
+        if (!mounted) return;
+        setShowing(true);
+        setTimeout(() => {
+          if (!mounted) return;
+          setShowing(false);
+          setConverging(false);
+          setTimeout(() => {
+            if (!mounted) return;
+            setIdx((i) => (i + 1) % CYCLE_DECISIONS.length);
+            cycle();
+          }, 2500);
+        }, 2000);
+      }, 1200);
+    }
+    const start = setTimeout(cycle, 1500);
+    return () => { mounted = false; clearTimeout(start); };
+  }, []);
+
+  return {
+    decision: CYCLE_DECISIONS[idx],
+    converging,
+    showing,
+  };
 }
-
-/* ─── Boot ──────────────────────────────────────────────── */
-
-const BOOT = ["Initialising…", "Loading baseline…", "Mapping culture…", "Reading signal…", "Running."];
 
 /* ─── Scenarios ─────────────────────────────────────────── */
 
 const SCENARIOS: { label: string; sub: string; input: CampaignInput }[] = [
-  { label: "Breaking artist — momentum moment", sub: "340k monthly, accelerating, $15k", input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 } },
-  { label: "Established artist — major release", sub: "2.1M monthly, plateau, $35k", input: { trackName: "Cathedral", artistStage: "established", budget: 70 } },
-  { label: "Emerging artist — first traction", sub: "12k monthly, early traction, $3k", input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 } },
+  { label: "Breaking artist — momentum moment", sub: "340k monthly · $15k", input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 } },
+  { label: "Established artist — major release", sub: "2.1M monthly · $35k", input: { trackName: "Cathedral", artistStage: "established", budget: 70 } },
+  { label: "Emerging artist — first traction", sub: "12k monthly · $3k", input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 } },
 ];
+
+/* ─── Boot ──────────────────────────────────────────────── */
+
+const BOOT = ["Initialising…", "Reading signal…", "Mapping culture…", "Running."];
 
 /* ─── Page ──────────────────────────────────────────────── */
 
 export default function CampaignPage() {
-  const [step, setStep] = useState<"input" | "boot" | "run" | "done">("input");
+  const [mode, setMode] = useState<"system" | "boot" | "converge" | "result">("system");
   const [output, setOutput] = useState<SystemOutput | null>(null);
   const [bootIdx, setBootIdx] = useState(0);
-  const [evIdx, setEvIdx] = useState(0);
-  const [openReasoning, setOpenReasoning] = useState<Record<number, boolean>>({});
-  const [activeIdx, setActiveIdx] = useState<number | null>(null);
-  const [showCustom, setShowCustom] = useState(false);
-  const [customInput, setCustomInput] = useState<CampaignInput>({ trackName: "", artistStage: "breaking", budget: 30 });
-  const [introMap, setIntroMap] = useState(true);
-  const endRef = useRef<HTMLDivElement | null>(null);
+  const cycling = useCyclingDecision();
 
   const launch = useCallback((inp: CampaignInput) => {
     setOutput(generate(inp));
-    setStep("boot");
-    setBootIdx(0); setEvIdx(0); setOpenReasoning({}); setActiveIdx(null); setShowCustom(false); setIntroMap(true);
+    setMode("boot");
+    setBootIdx(0);
   }, []);
 
+  /* Boot sequence */
   useEffect(() => {
-    if (step !== "boot") return;
-    if (bootIdx < BOOT.length - 1) { const t = setTimeout(() => setBootIdx((b) => b + 1), 480); return () => clearTimeout(t); }
-    else { const t = setTimeout(() => { setStep("run"); setEvIdx(0); }, 280); return () => clearTimeout(t); }
-  }, [step, bootIdx]);
-
-  /* Fade intro emphasis after 2s of run */
-  useEffect(() => {
-    if (step !== "run") return;
-    const t = setTimeout(() => setIntroMap(false), 2000);
-    return () => clearTimeout(t);
-  }, [step]);
-
-  useEffect(() => {
-    if (step !== "run" || !output) return;
-    if (evIdx < output.moments.length - 1) { const t = setTimeout(() => setEvIdx((i) => i + 1), 900); return () => clearTimeout(t); }
-    else { const t = setTimeout(() => setStep("done"), 400); return () => clearTimeout(t); }
-  }, [step, evIdx, output]);
-
-  useEffect(() => {
-    if ((step === "run" || step === "done") && endRef.current) {
-      setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100);
+    if (mode !== "boot") return;
+    if (bootIdx < BOOT.length - 1) {
+      const t = setTimeout(() => setBootIdx((b) => b + 1), 500);
+      return () => clearTimeout(t);
+    } else {
+      const t = setTimeout(() => setMode("converge"), 300);
+      return () => clearTimeout(t);
     }
-  }, [step, evIdx]);
+  }, [mode, bootIdx]);
 
-  const reset = useCallback(() => { setStep("input"); setOutput(null); setBootIdx(0); setEvIdx(0); setOpenReasoning({}); setActiveIdx(null); }, []);
-  const toggleR = (i: number) => setOpenReasoning((r) => ({ ...r, [i]: !r[i] }));
-  const vis = output ? output.moments.slice(0, step === "done" ? output.moments.length : evIdx + 1) : [];
+  /* Converge → result */
+  useEffect(() => {
+    if (mode !== "converge") return;
+    const t = setTimeout(() => setMode("result"), 2200);
+    return () => clearTimeout(t);
+  }, [mode]);
 
-  /* Which modules are active right now? Driven by hovered or current moment */
-  const currentMoment = output ? (activeIdx !== null ? output.moments[activeIdx] : vis[vis.length - 1]) : null;
-  const activeModules: ModuleId[] = currentMoment ? TYPE_TO_MODULES[currentMoment.type] : [];
+  const reset = useCallback(() => { setMode("system"); setOutput(null); setBootIdx(0); }, []);
+
+  const decisionColor = (d: Decision) => d === "PUSH" ? "text-signal" : d === "TEST" ? "text-sun" : "text-electric";
 
   return (
     <main className="min-h-screen bg-paper">
@@ -401,67 +268,80 @@ export default function CampaignPage() {
         </div>
       </header>
 
-      <section className="bg-ink text-paper py-10 md:py-12">
-        <div className="mx-auto max-w-[960px] px-6 md:px-10">
-          <h1 className="font-display text-3xl md:text-5xl leading-[0.95] font-bold">
-            AI runs <span className="italic font-light text-signal">the campaign.</span>
-          </h1>
-          <p className="mt-3 text-sm text-paper/30 max-w-sm">Decision → content → spend → optimisation. Continuously.</p>
-        </div>
-      </section>
+      {/* ── SYSTEM LAYER ──────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {mode === "system" && (
+          <motion.div key="system" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }}>
 
-      <div className="mx-auto max-w-[960px] px-6 md:px-10 py-10 md:py-14">
-        <AnimatePresence mode="wait">
-          {/* Scenarios */}
-          {step === "input" && (
-            <motion.div key="input" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.4 }} className="max-w-2xl">
-              <p className="text-sm text-ink/40 mb-6">Pick a campaign. Watch the system run.</p>
-              <div className="grid gap-3 mb-8">
-                {SCENARIOS.map((sc) => (
-                  <button key={sc.label} onClick={() => launch(sc.input)} className="group w-full text-left rounded-xl border border-ink/10 hover:border-ink/25 px-5 py-4 transition-colors flex items-center justify-between gap-4">
-                    <div>
-                      <div className="text-sm font-medium text-ink/70 group-hover:text-ink transition-colors">{sc.label}</div>
-                      <div className="text-xs text-ink/30 mt-0.5">{sc.sub}</div>
-                    </div>
-                    <span className="text-ink/12 group-hover:text-signal transition-colors text-sm">→</span>
-                  </button>
+            {/* Hero */}
+            <section className="bg-ink text-paper pt-14 pb-4 md:pt-20 md:pb-6">
+              <div className="mx-auto max-w-[960px] px-6 md:px-10">
+                <h1 className="font-display text-4xl md:text-6xl leading-[0.92] font-bold max-w-lg">
+                  One system.<br />
+                  <span className="italic font-light text-signal">Every decision.</span>
+                </h1>
+                <p className="mt-4 text-sm text-paper/25 max-w-sm">Signal, culture, audience, capital. Connected. Continuous.</p>
+              </div>
+            </section>
+
+            {/* System map — the hero */}
+            <section className="mx-auto max-w-[960px] px-6 md:px-10 pt-8 md:pt-12">
+              <SystemMap
+                activeDecision={cycling.showing ? cycling.decision : null}
+                converging={cycling.converging}
+              />
+            </section>
+
+            {/* System statements */}
+            <section className="mx-auto max-w-[960px] px-6 md:px-10 py-10 md:py-14">
+              <div className="max-w-md mx-auto space-y-6">
+                {[
+                  "The system reads signal, culture, and audience.",
+                  "It decides what to do.",
+                  "It deploys capital automatically.",
+                ].map((line, i) => (
+                  <motion.p
+                    key={i}
+                    initial={{ opacity: 0, y: 8 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: i * 0.15 }}
+                    className="text-center text-sm text-ink/40 font-mono"
+                  >
+                    {line}
+                  </motion.p>
                 ))}
               </div>
-              <div className="border-t border-ink/6 pt-4">
-                <button onClick={() => setShowCustom((s) => !s)} className="text-xs text-ink/20 hover:text-ink/40 transition-colors">
-                  <span className="inline-block transition-transform mr-1" style={{ transform: showCustom ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>Custom setup
-                </button>
-                <AnimatePresence>
-                  {showCustom && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                      <div className="pt-4 max-w-md space-y-4">
-                        <div>
-                          <label className="block text-xs text-ink/35 mb-1">Track</label>
-                          <input type="text" value={customInput.trackName} onChange={(e) => setCustomInput((p) => ({ ...p, trackName: e.target.value }))} placeholder="e.g. Midnight Drive" className="w-full rounded-lg border border-ink/10 bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink/20 focus:outline-none focus:border-ink/25 transition-colors" />
-                        </div>
-                        <div className="flex gap-2">
-                          {([["emerging","Emerging"],["breaking","Breaking"],["established","Established"]] as [ArtistStage,string][]).map(([v,l]) => (
-                            <button key={v} onClick={() => setCustomInput((p) => ({ ...p, artistStage: v }))} className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${customInput.artistStage === v ? "bg-ink text-paper border-ink" : "border-ink/10 text-ink/45 hover:border-ink/20"}`}>{l}</button>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <input type="range" min={0} max={100} value={customInput.budget} onChange={(e) => setCustomInput((p) => ({ ...p, budget: Number(e.target.value) }))} className="flex-1 h-1.5 rounded-full appearance-none bg-ink/6 accent-ink cursor-pointer" />
-                          <span className="font-display font-bold text-sm min-w-[4rem] text-right">{fmt(BUDGET_MAP(customInput.budget))}</span>
-                        </div>
-                        <button onClick={() => { if (customInput.trackName.trim()) launch(customInput); }} disabled={!customInput.trackName.trim()} className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper px-4 py-2 text-xs font-medium hover:bg-signal transition-colors disabled:opacity-20 disabled:cursor-not-allowed">
-                          Run <span>→</span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          )}
+            </section>
 
-          {/* Boot */}
-          {step === "boot" && (
-            <motion.div key="boot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="max-w-xs py-14">
+            {/* CTA → campaign demo */}
+            <section className="mx-auto max-w-[960px] px-6 md:px-10 pb-16 md:pb-24">
+              <div className="border-t border-ink/6 pt-8 text-center">
+                <p className="text-xs text-ink/20 mb-5 font-mono">See the system run a campaign</p>
+                <div className="flex flex-col items-center gap-3 max-w-md mx-auto">
+                  {SCENARIOS.map((sc) => (
+                    <button
+                      key={sc.label}
+                      onClick={() => launch(sc.input)}
+                      className="group w-full text-left rounded-xl border border-ink/10 hover:border-ink/25 px-5 py-3.5 transition-colors flex items-center justify-between gap-4"
+                    >
+                      <div>
+                        <div className="text-sm font-medium text-ink/60 group-hover:text-ink transition-colors">{sc.label}</div>
+                        <div className="text-xs text-ink/25 mt-0.5">{sc.sub}</div>
+                      </div>
+                      <span className="text-ink/12 group-hover:text-signal transition-colors text-sm">→</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </motion.div>
+        )}
+
+        {/* ── BOOT ────────────────────────────────────── */}
+        {mode === "boot" && (
+          <motion.div key="boot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="mx-auto max-w-[960px] px-6 md:px-10">
+            <div className="max-w-xs py-24 md:py-32">
               {BOOT.map((line, i) => (
                 <motion.div key={line} initial={{ opacity: 0, x: -5 }} animate={bootIdx >= i ? { opacity: i === bootIdx ? 1 : 0.15, x: 0 } : { opacity: 0, x: -5 }} transition={{ duration: 0.2 }} className="font-mono text-sm mb-2">
                   <span className="text-ink/15 mr-2">{bootIdx > i ? "✓" : bootIdx === i ? "›" : " "}</span>
@@ -469,142 +349,69 @@ export default function CampaignPage() {
                 </motion.div>
               ))}
               <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (bootIdx + 1) / BOOT.length }} transition={{ duration: 0.25 }} className="h-px bg-ink/12 mt-5 origin-left" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── SYSTEM + TIMELINE (continuous) ──────────── */}
-        {(step === "run" || step === "done") && output && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-
-            {/* Live system map — persistent, reactive */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="mb-4"
-            >
-              <LiveSystem decision={output.decision} activeModules={activeModules} intro={introMap} />
-            </motion.div>
-
-            {/* Graph */}
-            <div className="mb-5">
-              <Graph moments={output.moments} activeIdx={activeIdx} onHover={setActiveIdx} />
             </div>
-
-            {/* Timeline */}
-            <div className="relative ml-1">
-              <div className="absolute left-[3px] top-0 bottom-0 w-px bg-ink/6" />
-
-              {vis.map((mo, i) => {
-                const isDecision = mo.type === "decision";
-                const isA = activeIdx === i;
-                const rOpen = !!openReasoning[i];
-
-                return (
-                  <motion.div
-                    key={`${mo.day}-${i}`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                    className={`relative pl-7 pb-0.5 transition-colors duration-100 ${isA ? "bg-ink/[0.015] -mx-2 px-9 rounded-lg" : ""}`}
-                    onMouseEnter={() => setActiveIdx(i)}
-                    onMouseLeave={() => setActiveIdx(null)}
-                  >
-                    <span className={`absolute left-0 top-[0.9rem] w-[7px] h-[7px] rounded-full ${dotFill(mo.type)} ${mo.type === "adjust" ? "animate-pulse" : ""}`} />
-
-                    {(i === 0 || mo.day !== vis[i - 1].day) && (
-                      <div className="text-[10px] font-mono text-ink/18 mb-0.5">Day {mo.day}</div>
-                    )}
-
-                    {isDecision ? (
-                      <div className="rounded-xl bg-ink text-paper p-5 mb-2">
-                        <div className="flex flex-wrap items-end justify-between gap-3 mb-1">
-                          <div className="font-display font-bold text-3xl md:text-4xl leading-none flex items-center gap-2">
-                            <span className={decisionColor(output.decision)}>→</span>{output.decision}
-                          </div>
-                          {mo.confidence && mo.risk && (
-                            <div className="flex gap-4 text-xs">
-                              <span className="text-paper/25">{mo.confidence}%</span>
-                              <span className={mo.risk === "Low" ? "text-mint" : mo.risk === "Medium" ? "text-sun" : "text-signal"}>{mo.risk}</span>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-paper/40 text-sm">{mo.action}</p>
-
-                        <button onClick={() => toggleR(i)} className="mt-2 text-xs text-paper/18 hover:text-paper/35 transition-colors">
-                          <span className="inline-block transition-transform mr-0.5" style={{ transform: rOpen ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
-                          {rOpen ? "Less" : "Why"}
-                        </button>
-                        <AnimatePresence>
-                          {rOpen && (
-                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                              <div className="mt-1.5 pl-2 border-l border-paper/10 space-y-1 text-xs text-paper/25">
-                                <p><span className="text-mint">Signal</span> {mo.reasoning.signal}</p>
-                                <p><span className="text-electric">Culture</span> {mo.reasoning.culture}</p>
-                                <p><span className="text-sun">Artist</span> {mo.reasoning.artist}</p>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        {mo.tool && (
-                          <a href={mo.tool.href} target={mo.tool.external ? "_blank" : undefined} rel={mo.tool.external ? "noreferrer noopener" : undefined} className="inline-flex items-center gap-1 mt-2 text-xs text-paper/15 hover:text-signal transition-colors">
-                            <span className="w-1 h-1 rounded-full bg-paper/8" />{mo.tool.label} {mo.tool.external ? "↗" : "→"}
-                          </a>
-                        )}
-                      </div>
-                    ) : (
-                      <div className={`pb-3 ${i < vis.length - 1 && vis[i + 1]?.day !== mo.day ? "border-b border-ink/4" : ""}`}>
-                        <p className={`text-sm ${mo.type === "adjust" ? "text-ink/65 font-medium" : mo.type === "monitor" ? "text-ink/30" : "text-ink/50"}`}>{mo.action}</p>
-
-                        <button onClick={() => toggleR(i)} className="mt-1 text-[11px] text-ink/15 hover:text-ink/30 transition-colors">
-                          <span className="inline-block transition-transform mr-0.5" style={{ transform: rOpen ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
-                          {rOpen ? "Less" : "Why"}
-                        </button>
-                        <AnimatePresence>
-                          {rOpen && (
-                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.15 }} className="overflow-hidden">
-                              <div className="mt-1 pl-2 border-l border-ink/6 space-y-0.5 text-[11px] text-ink/25">
-                                <p><span className="text-mint">Signal</span> {mo.reasoning.signal}</p>
-                                <p><span className="text-electric">Culture</span> {mo.reasoning.culture}</p>
-                                <p><span className="text-sun">Artist</span> {mo.reasoning.artist}</p>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        {mo.tool && (
-                          <a href={mo.tool.href} target={mo.tool.external ? "_blank" : undefined} rel={mo.tool.external ? "noreferrer noopener" : undefined} className="inline-flex items-center gap-1 mt-1 text-[11px] text-ink/15 hover:text-signal transition-colors">
-                            <span className="w-1 h-1 rounded-full bg-ink/8" />{mo.tool.label} {mo.tool.external ? "↗" : "→"}
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
-
-              {step === "done" && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="relative pl-7 pt-2 pb-4">
-                  <span className="absolute left-0 top-[0.85rem] w-[7px] h-[7px] rounded-full bg-mint animate-pulse" />
-                  <span className="text-xs text-ink/25 font-mono">System active · next eval 48h</span>
-                </motion.div>
-              )}
-
-              <div ref={endRef} />
-            </div>
-
-            {step === "done" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mt-6 pt-4 border-t border-ink/5">
-                <button onClick={reset} className="group inline-flex items-center gap-1.5 rounded-full border border-ink/12 px-4 py-2 text-xs font-medium hover:bg-ink hover:text-paper transition-colors">
-                  <span className="group-hover:-translate-x-0.5 transition-transform">←</span> Run another
-                </button>
-              </motion.div>
-            )}
           </motion.div>
         )}
-      </div>
+
+        {/* ── CONVERGE ────────────────────────────────── */}
+        {mode === "converge" && output && (
+          <motion.div key="converge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="mx-auto max-w-[960px] px-6 md:px-10 py-12 md:py-20">
+            <SystemMap activeDecision={output.decision} converging={true} />
+          </motion.div>
+        )}
+
+        {/* ── RESULT ──────────────────────────────────── */}
+        {mode === "result" && output && (
+          <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="mx-auto max-w-[960px] px-6 md:px-10">
+
+            {/* Compact system map — still alive */}
+            <div className="pt-8 md:pt-12 max-w-[480px] mx-auto">
+              <SystemMap activeDecision={output.decision} converging={false} />
+            </div>
+
+            {/* Decision card */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="max-w-md mx-auto mt-6 rounded-xl bg-ink text-paper p-6"
+            >
+              <div className="flex items-end justify-between gap-4 mb-2">
+                <div className="font-display font-bold text-4xl md:text-5xl leading-none flex items-center gap-2">
+                  <span className={decisionColor(output.decision)}>→</span>{output.decision}
+                </div>
+                <div className="flex gap-4 text-xs">
+                  <span className="text-paper/25">{output.confidence}%</span>
+                  <span className={output.risk === "Low" ? "text-mint" : output.risk === "Medium" ? "text-sun" : "text-signal"}>{output.risk}</span>
+                </div>
+              </div>
+              <p className="text-paper/30 text-sm font-mono">{output.deployment}</p>
+            </motion.div>
+
+            {/* Outcome */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+              className="max-w-md mx-auto mt-4 text-center"
+            >
+              <p className="text-xs text-ink/20 font-mono">{output.outcome}</p>
+            </motion.div>
+
+            {/* Actions */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="flex justify-center gap-3 mt-8 pb-16"
+            >
+              <button onClick={reset} className="group inline-flex items-center gap-1.5 rounded-full border border-ink/12 px-4 py-2 text-xs font-medium hover:bg-ink hover:text-paper transition-colors">
+                <span className="group-hover:-translate-x-0.5 transition-transform">←</span> Back to system
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
