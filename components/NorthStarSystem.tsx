@@ -15,10 +15,10 @@ export default function NorthStarSystem() {
         >
           <span className="eyebrow text-ink/60 mb-4 block">The principle</span>
           <h2 className="headline font-display text-4xl md:text-6xl leading-[1.05]">
-            We don&apos;t collect more data.
+            We turn data into evidence.
             <br />
             <span className="italic font-light">
-              We build better evidence to make better decisions.
+              And evidence into decisions.
             </span>
           </h2>
         </motion.div>
