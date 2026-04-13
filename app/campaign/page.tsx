@@ -157,7 +157,7 @@ function generate(input: CampaignInput): SystemOutput {
 function decisionColor(d: Decision) { return d === "PUSH" ? "text-signal" : d === "TEST" ? "text-sun" : "text-electric"; }
 function dotFill(t: Moment["type"]) { return t === "decision" ? "bg-ink" : t === "deploy" ? "bg-mint" : t === "execute" ? "bg-electric" : t === "adjust" ? "bg-signal" : "bg-ink/15"; }
 
-/* ─── Ecosystem Map ────────────────────────────────────── */
+/* ─── Module → moment wiring ──────────────────────────── */
 
 const MODULES = [
   { id: "signal", label: "Signal Monitor", angle: -90 },
@@ -167,134 +167,128 @@ const MODULES = [
   { id: "lens", label: "Artist & Track Lens", angle: 198 },
 ] as const;
 
-function EcosystemMap({ decision, onComplete }: { decision: Decision; onComplete: () => void }) {
-  const [phase, setPhase] = useState<"nodes" | "connect" | "signal" | "converge" | "decide" | "out">("nodes");
+type ModuleId = (typeof MODULES)[number]["id"];
 
-  useEffect(() => {
-    const timers = [
-      setTimeout(() => setPhase("connect"), 600),
-      setTimeout(() => setPhase("signal"), 1200),
-      setTimeout(() => setPhase("converge"), 2400),
-      setTimeout(() => setPhase("decide"), 3200),
-      setTimeout(() => setPhase("out"), 4200),
-      setTimeout(onComplete, 4800),
-    ];
-    return () => timers.forEach(clearTimeout);
-  }, [onComplete]);
+const TYPE_TO_MODULES: Record<Moment["type"], ModuleId[]> = {
+  decision: ["signal", "culture", "lens", "spend", "youtube"],
+  execute: ["culture", "lens"],
+  deploy: ["spend", "youtube"],
+  monitor: ["signal"],
+  adjust: ["signal", "culture", "spend"],
+};
 
-  const phaseGte = (p: typeof phase) => {
-    const order = ["nodes", "connect", "signal", "converge", "decide", "out"];
-    return order.indexOf(phase) >= order.indexOf(p);
-  };
+/* ─── Persistent Ecosystem ─────────────────────────────── */
 
-  const CX = 240, CY = 160, R = 110;
+function LiveSystem({
+  decision,
+  activeModules,
+  intro,
+}: {
+  decision: Decision;
+  activeModules: ModuleId[];
+  intro: boolean;
+}) {
+  const CX = 240, CY = 100, R = 72;
   const decColor = decision === "PUSH" ? "#FF4A1C" : decision === "TEST" ? "#FFD24C" : "#2C25FF";
 
   return (
-    <div className="flex items-center justify-center py-8 md:py-12">
-      <svg viewBox="0 0 480 320" className="w-full max-w-[520px]" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          {MODULES.map((mod, i) => {
-            const rad = (mod.angle * Math.PI) / 180;
-            const mx = CX + Math.cos(rad) * R;
-            const my = CY + Math.sin(rad) * R;
-            return (
-              <linearGradient key={`grad-${i}`} id={`line-grad-${i}`} x1={mx} y1={my} x2={CX} y2={CY} gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#0E0E0E" stopOpacity={0.06} />
-                <stop offset="100%" stopColor="#0E0E0E" stopOpacity={0.15} />
-              </linearGradient>
-            );
-          })}
-        </defs>
-
-        {/* Connection lines */}
+    <svg viewBox="0 0 480 200" className="w-full max-w-[520px] mx-auto" preserveAspectRatio="xMidYMid meet">
+      <defs>
         {MODULES.map((mod, i) => {
           const rad = (mod.angle * Math.PI) / 180;
           const mx = CX + Math.cos(rad) * R;
           const my = CY + Math.sin(rad) * R;
           return (
-            <line
-              key={`conn-${i}`}
-              x1={mx} y1={my} x2={CX} y2={CY}
-              stroke={`url(#line-grad-${i})`}
-              strokeWidth={1}
-              opacity={phaseGte("connect") ? 1 : 0}
-              style={{ transition: "opacity 0.4s ease" }}
+            <linearGradient key={`lg-${i}`} id={`lg-${i}`} x1={mx} y1={my} x2={CX} y2={CY} gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#0E0E0E" stopOpacity={0.04} />
+              <stop offset="100%" stopColor="#0E0E0E" stopOpacity={0.1} />
+            </linearGradient>
+          );
+        })}
+      </defs>
+
+      {/* Connection lines */}
+      {MODULES.map((mod, i) => {
+        const rad = (mod.angle * Math.PI) / 180;
+        const mx = CX + Math.cos(rad) * R;
+        const my = CY + Math.sin(rad) * R;
+        const active = activeModules.includes(mod.id);
+        return (
+          <line
+            key={`c-${i}`}
+            x1={mx} y1={my} x2={CX} y2={CY}
+            stroke={active ? decColor : `url(#lg-${i})`}
+            strokeWidth={active ? 1.5 : 0.75}
+            opacity={active ? 0.4 : 1}
+            style={{ transition: "all 0.4s ease" }}
+          />
+        );
+      })}
+
+      {/* Ambient signal dots — always moving */}
+      {MODULES.map((mod, i) => {
+        const rad = (mod.angle * Math.PI) / 180;
+        const mx = CX + Math.cos(rad) * R;
+        const my = CY + Math.sin(rad) * R;
+        const active = activeModules.includes(mod.id);
+        return (
+          <circle key={`sig-${i}`} r={active ? 2.5 : 1.5} fill={active ? decColor : "#0E0E0E"} opacity={active ? 0.5 : 0.1}>
+            <animateMotion
+              dur={active ? "1s" : "3s"}
+              repeatCount="indefinite"
+              begin={`${i * 0.5}s`}
+              path={`M${mx - CX},${my - CY} L0,0`}
             />
-          );
-        })}
+          </circle>
+        );
+      })}
 
-        {/* Signal pulses — dots moving along connections */}
-        {phaseGte("signal") && !phaseGte("out") && MODULES.map((mod, i) => {
-          const rad = (mod.angle * Math.PI) / 180;
-          const mx = CX + Math.cos(rad) * R;
-          const my = CY + Math.sin(rad) * R;
-          const converging = phaseGte("converge");
-          return (
-            <circle key={`pulse-${i}`} r={2.5} fill="#0E0E0E" opacity={0.25}>
-              <animateMotion
-                dur={converging ? "0.6s" : "1.8s"}
-                repeatCount={converging ? "1" : "indefinite"}
-                begin={converging ? "0s" : `${i * 0.3}s`}
-                fill={converging ? "freeze" : "remove"}
-                path={`M${mx - CX},${my - CY} L0,0`}
-              />
-            </circle>
-          );
-        })}
+      {/* Module nodes */}
+      {MODULES.map((mod, i) => {
+        const rad = (mod.angle * Math.PI) / 180;
+        const mx = CX + Math.cos(rad) * R;
+        const my = CY + Math.sin(rad) * R;
+        const active = activeModules.includes(mod.id);
+        return (
+          <g key={mod.id}>
+            {/* Pulse ring when active */}
+            {active && (
+              <circle cx={mx} cy={my} r={8} fill="none" stroke={decColor} strokeWidth={0.75} opacity={0.15}>
+                <animate attributeName="r" values="8;16;8" dur="1.5s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.15;0;0.15" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+            )}
+            <circle cx={mx} cy={my} r={active ? 4.5 : 3.5} fill={active ? decColor : "#0E0E0E"} opacity={active ? 0.7 : 0.2} style={{ transition: "all 0.3s ease" }} />
+            <text
+              x={mx}
+              y={my + (mod.angle > 0 && mod.angle < 180 ? 14 : -10)}
+              textAnchor="middle"
+              className="text-[7px] font-mono"
+              fill={active ? decColor : "#0E0E0E"}
+              opacity={active ? 0.45 : 0.15}
+              style={{ transition: "all 0.3s ease" }}
+            >
+              {mod.label}
+            </text>
+          </g>
+        );
+      })}
 
-        {/* Module nodes */}
-        {MODULES.map((mod, i) => {
-          const rad = (mod.angle * Math.PI) / 180;
-          const mx = CX + Math.cos(rad) * R;
-          const my = CY + Math.sin(rad) * R;
-          const converged = phaseGte("converge");
-          return (
-            <g key={mod.id} opacity={phaseGte("nodes") ? (phaseGte("out") ? 0.15 : 1) : 0} style={{ transition: "opacity 0.4s ease" }}>
-              {/* Pulse ring */}
-              {phaseGte("signal") && !converged && (
-                <circle cx={mx} cy={my} r={12} fill="none" stroke="#0E0E0E" strokeWidth={0.5} opacity={0.08}>
-                  <animate attributeName="r" values="12;20;12" dur="2.5s" begin={`${i * 0.4}s`} repeatCount="indefinite" />
-                  <animate attributeName="opacity" values="0.08;0;0.08" dur="2.5s" begin={`${i * 0.4}s`} repeatCount="indefinite" />
-                </circle>
-              )}
-              <circle cx={mx} cy={my} r={converged ? 3 : 5} fill="#0E0E0E" opacity={converged ? 0.12 : 0.65} style={{ transition: "all 0.5s ease" }} />
-              <text x={mx} y={my + (mod.angle > 0 && mod.angle < 180 ? 16 : -12)} textAnchor="middle" className="text-[8px] font-mono" fill="#0E0E0E" opacity={converged ? 0.08 : 0.25} style={{ transition: "opacity 0.4s ease" }}>
-                {mod.label}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Center node */}
-        <circle cx={CX} cy={CY} r={phaseGte("converge") ? 18 : 8} fill={phaseGte("decide") ? decColor : "#0E0E0E"} opacity={phaseGte("decide") ? 0.9 : 0.7} style={{ transition: "all 0.5s ease" }}>
-          {phaseGte("signal") && !phaseGte("converge") && (
-            <animate attributeName="r" values="8;10;8" dur="1.5s" repeatCount="indefinite" />
-          )}
-        </circle>
-
-        {/* Decision text */}
-        {phaseGte("decide") && (
-          <text x={CX} y={CY + 4} textAnchor="middle" className="text-[11px] font-mono font-bold" fill="#FAF7F2" opacity={phaseGte("out") ? 0.5 : 1} style={{ transition: "opacity 0.3s ease" }}>
-            {decision}
-          </text>
-        )}
-
-        {/* Center label */}
-        {!phaseGte("decide") && (
-          <text x={CX} y={CY + 32} textAnchor="middle" className="text-[8px] font-mono" fill="#0E0E0E" opacity={0.2}>
-            Campaign System
-          </text>
-        )}
-      </svg>
-    </div>
+      {/* Center — always shows decision */}
+      <circle cx={CX} cy={CY} r={intro ? 14 : 10} fill={decColor} opacity={0.85} style={{ transition: "all 0.5s ease" }}>
+        <animate attributeName="r" values={intro ? "14;16;14" : "10;11;10"} dur="2s" repeatCount="indefinite" />
+      </circle>
+      <text x={CX} y={CY + 3.5} textAnchor="middle" className="text-[9px] font-mono font-bold" fill="#FAF7F2">
+        {decision}
+      </text>
+    </svg>
   );
 }
 
 /* ─── Graph ─────────────────────────────────────────────── */
 
 function Graph({ moments, activeIdx, onHover }: { moments: Moment[]; activeIdx: number | null; onHover: (i: number | null) => void }) {
-  const W = 720, H = 180, PX = 36, PY = 20;
+  const W = 720, H = 160, PX = 36, PY = 16;
   const maxS = Math.max(...moments.map((m) => m.streams)) * 1.1;
   const maxD = moments[moments.length - 1].day || 1;
   const px = (d: number) => PX + (d / maxD) * (W - PX * 2);
@@ -346,7 +340,7 @@ const SCENARIOS: { label: string; sub: string; input: CampaignInput }[] = [
 /* ─── Page ──────────────────────────────────────────────── */
 
 export default function CampaignPage() {
-  const [step, setStep] = useState<"input" | "boot" | "ecosystem" | "run" | "done">("input");
+  const [step, setStep] = useState<"input" | "boot" | "run" | "done">("input");
   const [output, setOutput] = useState<SystemOutput | null>(null);
   const [bootIdx, setBootIdx] = useState(0);
   const [evIdx, setEvIdx] = useState(0);
@@ -354,24 +348,27 @@ export default function CampaignPage() {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [showCustom, setShowCustom] = useState(false);
   const [customInput, setCustomInput] = useState<CampaignInput>({ trackName: "", artistStage: "breaking", budget: 30 });
+  const [introMap, setIntroMap] = useState(true);
   const endRef = useRef<HTMLDivElement | null>(null);
 
   const launch = useCallback((inp: CampaignInput) => {
     setOutput(generate(inp));
     setStep("boot");
-    setBootIdx(0); setEvIdx(0); setOpenReasoning({}); setActiveIdx(null); setShowCustom(false);
+    setBootIdx(0); setEvIdx(0); setOpenReasoning({}); setActiveIdx(null); setShowCustom(false); setIntroMap(true);
   }, []);
 
   useEffect(() => {
     if (step !== "boot") return;
     if (bootIdx < BOOT.length - 1) { const t = setTimeout(() => setBootIdx((b) => b + 1), 480); return () => clearTimeout(t); }
-    else { const t = setTimeout(() => setStep("ecosystem"), 280); return () => clearTimeout(t); }
+    else { const t = setTimeout(() => { setStep("run"); setEvIdx(0); }, 280); return () => clearTimeout(t); }
   }, [step, bootIdx]);
 
-  const onEcosystemComplete = useCallback(() => {
-    setStep("run");
-    setEvIdx(0);
-  }, []);
+  /* Fade intro emphasis after 2s of run */
+  useEffect(() => {
+    if (step !== "run") return;
+    const t = setTimeout(() => setIntroMap(false), 2000);
+    return () => clearTimeout(t);
+  }, [step]);
 
   useEffect(() => {
     if (step !== "run" || !output) return;
@@ -388,6 +385,10 @@ export default function CampaignPage() {
   const reset = useCallback(() => { setStep("input"); setOutput(null); setBootIdx(0); setEvIdx(0); setOpenReasoning({}); setActiveIdx(null); }, []);
   const toggleR = (i: number) => setOpenReasoning((r) => ({ ...r, [i]: !r[i] }));
   const vis = output ? output.moments.slice(0, step === "done" ? output.moments.length : evIdx + 1) : [];
+
+  /* Which modules are active right now? Driven by hovered or current moment */
+  const currentMoment = output ? (activeIdx !== null ? output.moments[activeIdx] : vis[vis.length - 1]) : null;
+  const activeModules: ModuleId[] = currentMoment ? TYPE_TO_MODULES[currentMoment.type] : [];
 
   return (
     <main className="min-h-screen bg-paper">
@@ -470,21 +471,24 @@ export default function CampaignPage() {
               <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (bootIdx + 1) / BOOT.length }} transition={{ duration: 0.25 }} className="h-px bg-ink/12 mt-5 origin-left" />
             </motion.div>
           )}
-
-          {/* Ecosystem */}
-          {step === "ecosystem" && output && (
-            <motion.div key="ecosystem" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-              <EcosystemMap decision={output.decision} onComplete={onEcosystemComplete} />
-            </motion.div>
-          )}
         </AnimatePresence>
 
-        {/* ── THE TIMELINE ────────────────────────────── */}
+        {/* ── SYSTEM + TIMELINE (continuous) ──────────── */}
         {(step === "run" || step === "done") && output && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
 
-            {/* Graph — no border, no label, just the curve */}
-            <div className="mb-6">
+            {/* Live system map — persistent, reactive */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="mb-4"
+            >
+              <LiveSystem decision={output.decision} activeModules={activeModules} intro={introMap} />
+            </motion.div>
+
+            {/* Graph */}
+            <div className="mb-5">
               <Graph moments={output.moments} activeIdx={activeIdx} onHover={setActiveIdx} />
             </div>
 
@@ -514,22 +518,20 @@ export default function CampaignPage() {
                     )}
 
                     {isDecision ? (
-                      /* Decision — the only dark card in the entire UI */
                       <div className="rounded-xl bg-ink text-paper p-5 mb-2">
-                        <div className="flex flex-wrap items-end justify-between gap-3 mb-2">
+                        <div className="flex flex-wrap items-end justify-between gap-3 mb-1">
                           <div className="font-display font-bold text-3xl md:text-4xl leading-none flex items-center gap-2">
                             <span className={decisionColor(output.decision)}>→</span>{output.decision}
                           </div>
                           {mo.confidence && mo.risk && (
                             <div className="flex gap-4 text-xs">
-                              <span className="text-paper/25">{mo.confidence}% conf</span>
-                              <span className={mo.risk === "Low" ? "text-mint" : mo.risk === "Medium" ? "text-sun" : "text-signal"}>{mo.risk} risk</span>
+                              <span className="text-paper/25">{mo.confidence}%</span>
+                              <span className={mo.risk === "Low" ? "text-mint" : mo.risk === "Medium" ? "text-sun" : "text-signal"}>{mo.risk}</span>
                             </div>
                           )}
                         </div>
-                        <p className="text-paper/45 text-sm">{mo.action}</p>
+                        <p className="text-paper/40 text-sm">{mo.action}</p>
 
-                        {/* Reasoning — collapsed */}
                         <button onClick={() => toggleR(i)} className="mt-2 text-xs text-paper/18 hover:text-paper/35 transition-colors">
                           <span className="inline-block transition-transform mr-0.5" style={{ transform: rOpen ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
                           {rOpen ? "Less" : "Why"}
@@ -553,11 +555,9 @@ export default function CampaignPage() {
                         )}
                       </div>
                     ) : (
-                      /* Standard moment */
                       <div className={`pb-3 ${i < vis.length - 1 && vis[i + 1]?.day !== mo.day ? "border-b border-ink/4" : ""}`}>
-                        <p className={`text-sm ${mo.type === "adjust" ? "text-ink/65 font-medium" : mo.type === "monitor" ? "text-ink/35" : "text-ink/55"}`}>{mo.action}</p>
+                        <p className={`text-sm ${mo.type === "adjust" ? "text-ink/65 font-medium" : mo.type === "monitor" ? "text-ink/30" : "text-ink/50"}`}>{mo.action}</p>
 
-                        {/* Reasoning — collapsed */}
                         <button onClick={() => toggleR(i)} className="mt-1 text-[11px] text-ink/15 hover:text-ink/30 transition-colors">
                           <span className="inline-block transition-transform mr-0.5" style={{ transform: rOpen ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
                           {rOpen ? "Less" : "Why"}
@@ -585,7 +585,6 @@ export default function CampaignPage() {
                 );
               })}
 
-              {/* Active indicator — replaces system bar */}
               {step === "done" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="relative pl-7 pt-2 pb-4">
                   <span className="absolute left-0 top-[0.85rem] w-[7px] h-[7px] rounded-full bg-mint animate-pulse" />
