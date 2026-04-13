@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -533,12 +533,219 @@ function SystemMap({ state, compact }: { state: LoopState; compact?: boolean }) 
   );
 }
 
+/* ─── Live processing feed (synced to loop) ─────────────── */
+
+type FeedTag = "signal" | "culture" | "lens" | "decide" | "deploy";
+interface FeedEntry { id: number; tag: FeedTag; text: string }
+
+const SIGNAL_TEXTS = [
+  "stream velocity +12% · 7d",
+  "save rate 5.1% · rising",
+  "playlist adds 38 · Spotify editorial",
+  "skip rate 18% · below threshold",
+];
+const CULTURE_TEXTS = [
+  "TikTok creator cluster firing · 4.2k",
+  "Gen-Z saturation crossing threshold",
+  "Discord chatter +28% · scene-adjacent",
+  "Reddit sentiment +14% · organic",
+];
+const LENS_TEXTS = [
+  "audience lock · breaking · 340k monthly",
+  "artist cohort match · 82% overlap",
+  "track fingerprint · uptempo / hook at 0:14",
+];
+const DEPLOY_TEXTS = [
+  "capital routing · 40/35/25 split",
+  "creator briefs drafted · 12 shortlisted",
+  "YouTube coach · 3 formats queued",
+];
+
+function useLiveFeed(state: LoopState): FeedEntry[] {
+  const [feed, setFeed] = useState<FeedEntry[]>([]);
+  const lastPhase = useRef<Phase | null>(null);
+  const counter = useRef(0);
+
+  useEffect(() => {
+    if (lastPhase.current === state.phase) return;
+    lastPhase.current = state.phase;
+    let entry: FeedEntry | null = null;
+    const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+    const newId = ++counter.current;
+
+    if (state.phase === "signal_fire") entry = { id: newId, tag: "signal", text: pick(SIGNAL_TEXTS) };
+    else if (state.phase === "culture_fire") entry = { id: newId, tag: "culture", text: pick(CULTURE_TEXTS) };
+    else if (state.phase === "converge") entry = { id: newId, tag: "lens", text: pick(LENS_TEXTS) };
+    else if (state.phase === "decide") entry = { id: newId, tag: "decide", text: `${state.decision} · ${state.confidence}% confidence` };
+    else if (state.phase === "downstream") entry = { id: newId, tag: "deploy", text: pick(DEPLOY_TEXTS) };
+
+    if (entry) setFeed((prev) => [...prev.slice(-5), entry!]);
+  }, [state.phase, state.decision, state.confidence]);
+
+  return feed;
+}
+
+function LiveFeed({ feed, decision }: { feed: FeedEntry[]; decision: Decision }) {
+  const decColor = decision === "PUSH" ? "text-signal" : decision === "TEST" ? "text-sun" : "text-electric";
+  const tagLabel: Record<FeedTag, string> = {
+    signal: "signal", culture: "culture", lens: "lens", decide: "decide", deploy: "deploy",
+  };
+  // Always reserve 6 rows to prevent layout shift
+  const rows = feed.slice(-6);
+  const pad = 6 - rows.length;
+  return (
+    <div className="font-mono text-[11px] leading-[1.7] text-ink/45">
+      {Array.from({ length: pad }).map((_, i) => (
+        <div key={`pad-${i}`} className="opacity-0 select-none">—</div>
+      ))}
+      <AnimatePresence initial={false}>
+        {rows.map((e, i) => {
+          const ageFromTop = rows.length - 1 - i;
+          const opacity = ageFromTop === 0 ? 1 : ageFromTop === 1 ? 0.8 : ageFromTop === 2 ? 0.55 : 0.3;
+          const isDecide = e.tag === "decide";
+          const isDeploy = e.tag === "deploy";
+          return (
+            <motion.div
+              key={e.id}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity, x: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="flex items-baseline gap-3"
+            >
+              <span className="text-ink/20 w-[54px] shrink-0">[{tagLabel[e.tag]}]</span>
+              <span className={isDecide ? `${decColor} font-semibold` : isDeploy ? "text-mint" : "text-ink/55"}>
+                {isDecide ? "→ " : ""}{e.text}
+              </span>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─── Product UI fragments ──────────────────────────────── */
+
+function FragmentVelocity({ active, decision }: { active: boolean; decision: Decision }) {
+  const color = decision === "PUSH" ? "#FF4A1C" : decision === "TEST" ? "#FFD24C" : "#2C25FF";
+  // 14 points — fake stream velocity sparkline
+  const pts = "0,22 8,20 16,18 24,17 32,15 40,13 48,12 56,9 64,8 72,6 80,5 88,3 96,2 104,1";
+  return (
+    <div className="rounded-lg border border-ink/8 bg-paper p-3 w-full">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="font-mono text-[10px] text-ink/40">stream velocity · 7d</span>
+        <span className="font-mono text-[10px] text-mint">+12%</span>
+      </div>
+      <svg viewBox="0 0 108 26" className="w-full h-9">
+        <polyline points={pts} fill="none" stroke={active ? color : "#0E0E0E"} strokeOpacity={active ? 0.9 : 0.35} strokeWidth={1.25} strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={104} cy={1} r={2} fill={active ? color : "#0E0E0E"} opacity={active ? 1 : 0.4}>
+          {active && <animate attributeName="r" values="2;3.5;2" dur="1.2s" repeatCount="indefinite" />}
+        </circle>
+      </svg>
+      <div className="mt-1 font-mono text-[10px] text-ink/30">342,118 daily · est.</div>
+    </div>
+  );
+}
+
+function FragmentAudience({ active }: { active: boolean }) {
+  const rows = [
+    { label: "LA · 18-24", w: 72 },
+    { label: "NY · 18-24", w: 56 },
+    { label: "London · 25-34", w: 44 },
+    { label: "Berlin · 18-24", w: 32 },
+  ];
+  return (
+    <div className="rounded-lg border border-ink/8 bg-paper p-3 w-full">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-mono text-[10px] text-ink/40">audience lock · top markets</span>
+        <span className={`font-mono text-[10px] ${active ? "text-mint" : "text-ink/25"}`}>● live</span>
+      </div>
+      <div className="space-y-1.5">
+        {rows.map((r, i) => (
+          <div key={r.label} className="flex items-center gap-2">
+            <span className="font-mono text-[10px] text-ink/45 w-[110px] shrink-0">{r.label}</span>
+            <div className="flex-1 h-1.5 bg-ink/5 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${r.w}%` }}
+                transition={{ duration: 0.8, delay: i * 0.1 }}
+                className="h-full bg-ink/60"
+                style={active ? { background: "#1FBE7A" } : undefined}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FragmentSpend({ decision, active }: { decision: Decision; active: boolean }) {
+  const color = decision === "PUSH" ? "#FF4A1C" : decision === "TEST" ? "#FFD24C" : "#2C25FF";
+  const rows = decision === "PUSH"
+    ? [{ label: "paid",     pct: 40 }, { label: "content",  pct: 35 }, { label: "creators", pct: 25 }]
+    : decision === "TEST"
+    ? [{ label: "testing",  pct: 40 }, { label: "held",     pct: 60 }, { label: "creators", pct: 0  }]
+    : [{ label: "preserved",pct: 100 }, { label: "—",       pct: 0  }, { label: "—",        pct: 0  }];
+  return (
+    <div className="rounded-lg border border-ink/8 bg-paper p-3 w-full">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-mono text-[10px] text-ink/40">spend engine · allocation</span>
+        <span className="font-mono text-[10px] font-semibold" style={{ color: active ? color : "#0E0E0E44" }}>{decision}</span>
+      </div>
+      <div className="space-y-1.5">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center gap-2">
+            <span className="font-mono text-[10px] text-ink/45 w-[60px] shrink-0">{r.label}</span>
+            <div className="flex-1 h-1.5 bg-ink/5 rounded-full overflow-hidden">
+              <motion.div
+                animate={{ width: `${r.pct}%` }}
+                transition={{ duration: 0.6 }}
+                className="h-full"
+                style={{ background: active ? color : "#0E0E0E", opacity: active ? 0.9 : 0.4 }}
+              />
+            </div>
+            <span className="font-mono text-[10px] text-ink/35 w-[28px] text-right">{r.pct}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Scenarios ─────────────────────────────────────────── */
 
-const SCENARIOS: { label: string; sub: string; input: CampaignInput }[] = [
-  { label: "Breaking artist — momentum moment", sub: "340k monthly · $15k", input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 } },
-  { label: "Established artist — major release", sub: "2.1M monthly · $35k", input: { trackName: "Cathedral", artistStage: "established", budget: 70 } },
-  { label: "Emerging artist — first traction", sub: "12k monthly · $3k", input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 } },
+interface Scenario {
+  situation: string;
+  context: string;
+  hint: string;
+  likelyDecision: Decision;
+  input: CampaignInput;
+}
+
+const SCENARIOS: Scenario[] = [
+  {
+    situation: "A breaking artist just spiked.",
+    context: "340k monthly · TikTok inflection · $15k available",
+    hint: "culture says yes. signal says momentum. decide now.",
+    likelyDecision: "PUSH",
+    input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 },
+  },
+  {
+    situation: "A major release drops Friday.",
+    context: "2.1M monthly · established catalog · $35k planned",
+    hint: "known cohort. capital-heavy. deploy with conviction.",
+    likelyDecision: "PUSH",
+    input: { trackName: "Cathedral", artistStage: "established", budget: 70 },
+  },
+  {
+    situation: "An emerging artist caught first traction.",
+    context: "12k monthly · early save curve · $3k ceiling",
+    hint: "signal is soft. test before you commit capital.",
+    likelyDecision: "TEST",
+    input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 },
+  },
 ];
 
 /* ─── Boot ──────────────────────────────────────────────── */
@@ -552,6 +759,7 @@ export default function CampaignPage() {
   const [output, setOutput] = useState<SystemOutput | null>(null);
   const [bootIdx, setBootIdx] = useState(0);
   const loop = useSystemLoop();
+  const feed = useLiveFeed(loop);
 
   /* Fixed loop state for converge/result modes */
   const fixedState: LoopState = output ? {
@@ -621,45 +829,69 @@ export default function CampaignPage() {
               <SystemMap state={loop} />
             </section>
 
-            <section className="mx-auto max-w-[960px] px-6 md:px-10 py-10 md:py-14">
-              <div className="max-w-md mx-auto space-y-6">
-                {[
-                  "The system reads signal, culture, and audience.",
-                  "It updates continuously.",
-                  "It decides what to do.",
-                  "It deploys capital automatically.",
-                ].map((line, i) => (
-                  <motion.p
-                    key={i}
-                    initial={{ opacity: 0, y: 8 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: i * 0.12 }}
-                    className="text-center text-sm text-ink/35 font-mono"
-                  >
-                    {line}
-                  </motion.p>
-                ))}
+            {/* Live processing feed + product UI fragments */}
+            <section className="mx-auto max-w-[1120px] px-6 md:px-10 pt-6 md:pt-10 pb-14">
+              <div className="grid md:grid-cols-[1fr_1.05fr] gap-8 md:gap-12 items-start max-w-[900px] mx-auto">
+
+                {/* Left — live processing feed */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-60" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-mint" />
+                    </span>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/35">system · live</span>
+                  </div>
+                  <LiveFeed feed={feed} decision={loop.decision} />
+                </div>
+
+                {/* Right — product UI fragments */}
+                <div className="grid grid-cols-1 gap-2.5">
+                  <FragmentVelocity active={loop.activeNodes.includes("signal")} decision={loop.decision} />
+                  <FragmentAudience active={loop.activeNodes.includes("culture") || loop.phase === "converge" || loop.phase === "decide"} />
+                  <FragmentSpend decision={loop.decision} active={loop.phase === "decide" || loop.phase === "downstream"} />
+                </div>
               </div>
             </section>
 
-            <section className="mx-auto max-w-[960px] px-6 md:px-10 pb-16 md:pb-24">
-              <div className="border-t border-ink/6 pt-8 text-center">
-                <p className="text-xs text-ink/18 mb-5 font-mono">See the system run a campaign</p>
-                <div className="flex flex-col items-center gap-3 max-w-md mx-auto">
-                  {SCENARIOS.map((sc) => (
-                    <button
-                      key={sc.label}
-                      onClick={() => launch(sc.input)}
-                      className="group w-full text-left rounded-xl border border-ink/10 hover:border-ink/25 px-5 py-3.5 transition-colors flex items-center justify-between gap-4"
-                    >
-                      <div>
-                        <div className="text-sm font-medium text-ink/60 group-hover:text-ink transition-colors">{sc.label}</div>
-                        <div className="text-xs text-ink/25 mt-0.5">{sc.sub}</div>
-                      </div>
-                      <span className="text-ink/12 group-hover:text-signal transition-colors text-sm">→</span>
-                    </button>
-                  ))}
+            {/* Scenario inputs — feel like injecting a situation into the system */}
+            <section className="mx-auto max-w-[960px] px-6 md:px-10 pb-20 md:pb-28">
+              <div className="border-t border-ink/6 pt-10">
+                <div className="flex items-baseline justify-between mb-5 max-w-[640px] mx-auto">
+                  <p className="font-mono text-[11px] text-ink/40 uppercase tracking-[0.12em]">Inject a scenario</p>
+                  <p className="font-mono text-[10px] text-ink/25">the system will respond</p>
+                </div>
+                <div className="flex flex-col gap-2.5 max-w-[640px] mx-auto">
+                  {SCENARIOS.map((sc) => {
+                    const dotClr = sc.likelyDecision === "PUSH" ? "bg-signal" : sc.likelyDecision === "TEST" ? "bg-sun" : "bg-electric";
+                    const txtClr = sc.likelyDecision === "PUSH" ? "text-signal" : sc.likelyDecision === "TEST" ? "text-sun" : "text-electric";
+                    return (
+                      <button
+                        key={sc.situation}
+                        onClick={() => launch(sc.input)}
+                        className="group w-full text-left rounded-xl border border-ink/8 hover:border-ink/25 bg-paper px-5 py-4 transition-all hover:translate-x-[2px]"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`w-1.5 h-1.5 rounded-full ${dotClr}`} />
+                              <span className="text-[15px] font-medium text-ink/80 group-hover:text-ink transition-colors">{sc.situation}</span>
+                            </div>
+                            <div className="font-mono text-[10.5px] text-ink/35 ml-[14px]">{sc.context}</div>
+                            <div className="font-mono text-[10.5px] text-ink/45 ml-[14px] mt-1.5 italic">
+                              <span className="text-ink/30">// </span>{sc.hint}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <span className={`font-mono text-[10px] ${txtClr} opacity-60 group-hover:opacity-100 transition-opacity`}>
+                              likely {sc.likelyDecision}
+                            </span>
+                            <span className="text-ink/15 group-hover:text-ink/60 transition-all text-sm group-hover:translate-x-0.5">inject →</span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </section>
