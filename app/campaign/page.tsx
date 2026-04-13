@@ -274,7 +274,13 @@ function buildCurvedPath(mx: number, my: number, cx: number, cy: number, bias: n
 
 /* ─── Hero System Map ──────────────────────────────────── */
 
-function SystemMap({ state, compact }: { state: LoopState; compact?: boolean }) {
+function SystemMap({ state, compact, displayConfidence, mode, output }: {
+  state: LoopState;
+  compact?: boolean;
+  displayConfidence: number;
+  mode: "ambient" | "evaluating" | "resolved";
+  output?: SystemOutput | null;
+}) {
   const VW = 800;
   const VH = compact ? 420 : 600;
   const scale = compact ? 0.72 : 1;
@@ -284,6 +290,12 @@ function SystemMap({ state, compact }: { state: LoopState; compact?: boolean }) 
   const isDeciding = state.phase === "decide";
   const isConverging = state.phase === "converge" || isDeciding;
   const isDownstream = state.phase === "downstream";
+  const isResolved = mode === "resolved";
+  const isEvaluating = mode === "evaluating";
+  // Decision is "locked in" when loop has reached decide phase OR we're in resolved
+  const decisionLocked = isDeciding || isDownstream || isResolved;
+  // During evaluating, before lock, show "..."
+  const showEvaluatingMark = isEvaluating && !decisionLocked;
 
   // Module positions relative to center (with scale applied, centered on CY)
   const mods = MODULES.map((mod) => {
@@ -474,60 +486,141 @@ function SystemMap({ state, compact }: { state: LoopState; compact?: boolean }) 
       })}
 
       {/* Decision rings — radiate outward from center on decide */}
-      {isDeciding && [0, 1, 2].map((i) => (
+      {isDeciding && !isResolved && [0, 1, 2].map((i) => (
         <circle key={`ring-${i}`} cx={CX} cy={CY} r={50} fill="none" stroke={decColor} strokeWidth={1.5} opacity={0}>
           <animate attributeName="r" from="50" to={compact ? "110" : "160"} dur="1.8s" begin={`${i * 0.5}s`} repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.4;0" dur="1.8s" begin={`${i * 0.5}s`} repeatCount="indefinite" />
         </circle>
       ))}
 
-      {/* Center node — layered shadow + hub */}
-      <circle
-        cx={CX + 2} cy={CY + 4}
-        r={isDeciding ? (compact ? 42 : 58) : (compact ? 30 : 40)}
-        fill="#0E0E0E"
-        opacity={0.1}
-        style={{ transition: "all 0.5s ease" }}
-      />
-      <circle
-        cx={CX} cy={CY}
-        r={isDeciding ? (compact ? 40 : 56) : isConverging ? (compact ? 34 : 46) : (compact ? 28 : 38)}
-        fill={isDeciding || isDownstream ? decColor : "#0E0E0E"}
-        opacity={isDeciding ? 0.95 : isDownstream ? 0.85 : 0.65}
-        style={{ transition: "all 0.5s ease" }}
-      >
-        {!isDeciding && !isDownstream && (
-          <animate attributeName="r" values={compact ? "28;31;28" : "38;42;38"} dur="3s" repeatCount="indefinite" />
-        )}
-      </circle>
-      {/* Inner highlight ring for depth */}
-      <circle
-        cx={CX} cy={CY}
-        r={isDeciding ? (compact ? 32 : 44) : (compact ? 22 : 30)}
-        fill="none"
-        stroke="#FAF7F2"
-        strokeWidth={1}
-        opacity={0.12}
-        style={{ transition: "all 0.5s ease" }}
-      />
+      {/* ── Center node / expanded detail panel ────────────── */}
+      {isResolved && output ? (
+        /* Expanded detail panel — center grows to reveal resolution */
+        (() => {
+          const pw = compact ? 280 : 360;
+          const ph = compact ? 140 : 180;
+          const px = CX - pw / 2;
+          const py = CY - ph / 2;
+          return (
+            <g>
+              {/* Shadow behind panel */}
+              <rect x={px + 3} y={py + 6} width={pw} height={ph} rx={14} fill="#0E0E0E" opacity={0.12} />
+              {/* Panel body */}
+              <rect x={px} y={py} width={pw} height={ph} rx={14} fill="#0E0E0E" />
+              {/* Colored edge */}
+              <rect x={px} y={py} width={4} height={ph} rx={2} fill={decColor} />
+              {/* Decision label */}
+              <text x={px + 22} y={py + (compact ? 34 : 42)} className="text-[10px] font-mono uppercase tracking-[0.14em]" fill="#FAF7F2" opacity={0.35}>decision</text>
+              <text x={px + 22} y={py + (compact ? 68 : 82)} className={`${compact ? "text-[32px]" : "text-[44px]"} font-display font-bold tracking-tight`} fill={decColor}>
+                {output.decision}
+              </text>
+              {/* Confidence + risk — top right */}
+              <text x={px + pw - 22} y={py + (compact ? 34 : 42)} textAnchor="end" className="text-[10px] font-mono uppercase tracking-[0.14em]" fill="#FAF7F2" opacity={0.35}>confidence</text>
+              <text x={px + pw - 22} y={py + (compact ? 60 : 72)} textAnchor="end" className={`${compact ? "text-[16px]" : "text-[20px]"} font-mono font-semibold`} fill="#FAF7F2">
+                {displayConfidence}%
+              </text>
+              <text x={px + pw - 22} y={py + (compact ? 78 : 92)} textAnchor="end" className="text-[10px] font-mono" fill={output.risk === "Low" ? "#1FBE7A" : output.risk === "Medium" ? "#FFD24C" : "#FF4A1C"}>
+                {output.risk} risk
+              </text>
+              {/* Divider */}
+              <line x1={px + 22} y1={py + (compact ? 88 : 106)} x2={px + pw - 22} y2={py + (compact ? 88 : 106)} stroke="#FAF7F2" strokeOpacity={0.08} />
+              {/* Deployment */}
+              <text x={px + 22} y={py + (compact ? 104 : 124)} className="text-[9px] font-mono uppercase tracking-[0.14em]" fill="#FAF7F2" opacity={0.35}>capital deployment</text>
+              <text x={px + 22} y={py + (compact ? 118 : 140)} className={`${compact ? "text-[11px]" : "text-[12px]"} font-mono`} fill="#FAF7F2" opacity={0.8}>
+                {output.deployment}
+              </text>
+              {/* Outcome */}
+              {!compact && (
+                <text x={px + 22} y={py + 162} className="text-[11px] font-mono" fill="#FAF7F2" opacity={0.45}>
+                  projected · {output.outcome}
+                </text>
+              )}
+            </g>
+          );
+        })()
+      ) : (
+        <>
+          {/* Center node — layered shadow + hub */}
+          <circle
+            cx={CX + 2} cy={CY + 4}
+            r={isDeciding ? (compact ? 42 : 58) : (compact ? 30 : 40)}
+            fill="#0E0E0E"
+            opacity={0.1}
+            style={{ transition: "all 0.5s ease" }}
+          />
+          <circle
+            cx={CX} cy={CY}
+            r={isDeciding ? (compact ? 40 : 56) : isConverging ? (compact ? 34 : 46) : (compact ? 28 : 38)}
+            fill={decisionLocked ? decColor : "#0E0E0E"}
+            opacity={decisionLocked ? 0.95 : isEvaluating ? 0.75 : 0.65}
+            style={{ transition: "all 0.5s ease" }}
+          >
+            {!decisionLocked && (
+              <animate attributeName="r" values={compact ? "28;31;28" : "38;42;38"} dur={isEvaluating ? "1.4s" : "3s"} repeatCount="indefinite" />
+            )}
+          </circle>
+          {/* Inner highlight ring for depth */}
+          <circle
+            cx={CX} cy={CY}
+            r={isDeciding ? (compact ? 32 : 44) : (compact ? 22 : 30)}
+            fill="none"
+            stroke="#FAF7F2"
+            strokeWidth={1}
+            opacity={0.12}
+            style={{ transition: "all 0.5s ease" }}
+          />
 
-      {/* Decision text emerging from center */}
-      {(isDeciding || isDownstream) && (
-        <text
-          x={CX} y={CY + (compact ? 8 : 11)}
-          textAnchor="middle"
-          className={`${compact ? "text-[18px]" : "text-[26px]"} font-mono font-bold tracking-tight`}
-          fill="#FAF7F2"
-        >
-          {state.decision}
-        </text>
-      )}
+          {/* Decision text — ALWAYS present, just varies in treatment */}
+          {showEvaluatingMark ? (
+            <text
+              x={CX} y={CY + (compact ? 7 : 10)}
+              textAnchor="middle"
+              className={`${compact ? "text-[20px]" : "text-[28px]"} font-mono font-bold`}
+              fill="#FAF7F2"
+              opacity={0.85}
+            >
+              <tspan>
+                •<animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" repeatCount="indefinite" begin="0s" />
+              </tspan>
+              <tspan dx="3">
+                •<animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" repeatCount="indefinite" begin="0.3s" />
+              </tspan>
+              <tspan dx="3">
+                •<animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" repeatCount="indefinite" begin="0.6s" />
+              </tspan>
+            </text>
+          ) : (
+            <text
+              x={CX} y={CY + (compact ? 6 : 8)}
+              textAnchor="middle"
+              className={`${compact ? "text-[16px]" : "text-[24px]"} font-mono font-bold tracking-tight`}
+              fill="#FAF7F2"
+              opacity={decisionLocked ? 1 : 0.45}
+              style={{ transition: "opacity 0.5s ease" }}
+            >
+              {state.decision}
+            </text>
+          )}
 
-      {/* Confidence */}
-      {isDeciding && !compact && (
-        <text x={CX} y={CY + 82} textAnchor="middle" className="text-[11px] font-mono" fill="#0E0E0E" opacity={0.3}>
-          {state.confidence}% confidence
-        </text>
+          {/* Confidence — ALWAYS visible below decision */}
+          <text
+            x={CX} y={CY + (compact ? 20 : 28)}
+            textAnchor="middle"
+            className={`${compact ? "text-[9px]" : "text-[10px]"} font-mono tracking-wide`}
+            fill="#FAF7F2"
+            opacity={decisionLocked ? 0.55 : 0.35}
+            style={{ transition: "opacity 0.5s ease" }}
+          >
+            {displayConfidence}%
+          </text>
+
+          {/* Small evaluating label below node */}
+          {isEvaluating && !compact && (
+            <text x={CX} y={CY + 78} textAnchor="middle" className="text-[10px] font-mono uppercase tracking-[0.2em]" fill="#0E0E0E" opacity={0.3}>
+              evaluating
+            </text>
+          )}
+        </>
       )}
     </svg>
   );
@@ -748,55 +841,81 @@ const SCENARIOS: Scenario[] = [
   },
 ];
 
-/* ─── Boot ──────────────────────────────────────────────── */
+/* ─── Confidence jitter / smoothing hook ────────────────── */
 
-const BOOT = ["Initialising…", "Reading signal…", "Mapping culture…", "Running."];
+function useConfidenceDisplay(target: number, jitterAmount: number): number {
+  const [display, setDisplay] = useState(target);
+  const ref = useRef(target);
+  const targetRef = useRef(target);
+  const jitterRef = useRef(jitterAmount);
+  targetRef.current = target;
+  jitterRef.current = jitterAmount;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const j = (Math.random() - 0.5) * jitterRef.current * 2;
+      const t = targetRef.current + j;
+      // Smooth toward target
+      const next = ref.current + (t - ref.current) * 0.25;
+      ref.current = next;
+      setDisplay(next);
+    }, 80);
+    return () => clearInterval(interval);
+  }, []);
+
+  return Math.max(0, Math.min(99, Math.round(display)));
+}
 
 /* ─── Page ──────────────────────────────────────────────── */
 
+type PageMode = "ambient" | "evaluating" | "resolved";
+
 export default function CampaignPage() {
-  const [mode, setMode] = useState<"system" | "boot" | "converge" | "result">("system");
+  const [mode, setMode] = useState<PageMode>("ambient");
   const [output, setOutput] = useState<SystemOutput | null>(null);
-  const [bootIdx, setBootIdx] = useState(0);
+  const [scenarioState, setScenarioState] = useState<LoopState | null>(null);
+  const [activeScenario, setActiveScenario] = useState<string | null>(null);
   const loop = useSystemLoop();
-  const feed = useLiveFeed(loop);
 
-  /* Fixed loop state for converge/result modes */
-  const fixedState: LoopState = output ? {
-    phase: mode === "converge" ? "converge" : "decide",
-    decision: output.decision,
-    confidence: output.confidence,
-    activeNodes: mode === "converge"
-      ? ["signal", "culture", "spend", "youtube", "lens"]
-      : output.decision !== "HOLD" ? ["spend"] : [],
-    downstream: mode === "result" && output.decision !== "HOLD" ? "spend" : null,
-  } : loop;
+  // Map state source: scenarioState during evaluating/resolved, otherwise ambient loop
+  const currentState: LoopState = mode === "ambient" ? loop : (scenarioState ?? loop);
+  const feed = useLiveFeed(currentState);
 
-  const launch = useCallback((inp: CampaignInput) => {
-    setOutput(generate(inp));
-    setMode("boot");
-    setBootIdx(0);
+  // Confidence: higher jitter during evaluating, locked during resolved
+  const confJitter = mode === "evaluating" ? 7 : mode === "resolved" ? 0 : 2;
+  const displayConfidence = useConfidenceDisplay(currentState.confidence, confJitter);
+
+  const launch = useCallback((sc: Scenario) => {
+    const out = generate(sc.input);
+    setOutput(out);
+    setActiveScenario(sc.situation);
+    setMode("evaluating");
+
+    const dec = out.decision;
+    const final = out.confidence;
+
+    // Staged evaluation phases — scripted so decision does NOT instantly switch
+    setScenarioState({ phase: "idle", decision: dec, confidence: 42, activeNodes: [], downstream: null });
+    const t1 = setTimeout(() => setScenarioState({ phase: "signal_fire", decision: dec, confidence: 54, activeNodes: ["signal"], downstream: null }), 500);
+    const t2 = setTimeout(() => setScenarioState({ phase: "culture_fire", decision: dec, confidence: 64, activeNodes: ["signal", "culture", "lens"], downstream: null }), 1600);
+    const t3 = setTimeout(() => setScenarioState({ phase: "converge", decision: dec, confidence: Math.max(70, final - 6), activeNodes: ["signal", "culture", "spend", "youtube", "lens"], downstream: null }), 2800);
+    const t4 = setTimeout(() => setScenarioState({ phase: "decide", decision: dec, confidence: final, activeNodes: ["signal", "culture", "spend", "youtube", "lens"], downstream: null }), 4000);
+    const t5 = setTimeout(() => setMode("resolved"), 5000);
+
+    return () => [t1, t2, t3, t4, t5].forEach(clearTimeout);
   }, []);
 
-  useEffect(() => {
-    if (mode !== "boot") return;
-    if (bootIdx < BOOT.length - 1) {
-      const t = setTimeout(() => setBootIdx((b) => b + 1), 500);
-      return () => clearTimeout(t);
-    } else {
-      const t = setTimeout(() => setMode("converge"), 300);
-      return () => clearTimeout(t);
-    }
-  }, [mode, bootIdx]);
+  const reset = useCallback(() => {
+    setMode("ambient");
+    setOutput(null);
+    setScenarioState(null);
+    setActiveScenario(null);
+  }, []);
 
-  useEffect(() => {
-    if (mode !== "converge") return;
-    const t = setTimeout(() => setMode("result"), 2200);
-    return () => clearTimeout(t);
-  }, [mode]);
-
-  const reset = useCallback(() => { setMode("system"); setOutput(null); setBootIdx(0); }, []);
-  const decClr = (d: Decision) => d === "PUSH" ? "text-signal" : d === "TEST" ? "text-sun" : "text-electric";
+  // Derived visibility flags
+  const isAmbient = mode === "ambient";
+  const isEvaluating = mode === "evaluating";
+  const isResolved = mode === "resolved";
 
   return (
     <main className="min-h-screen bg-paper">
@@ -809,66 +928,79 @@ export default function CampaignPage() {
         </div>
       </header>
 
-      <AnimatePresence mode="wait">
-        {/* ── SYSTEM LAYER ────────────────────────────── */}
-        {mode === "system" && (
-          <motion.div key="system" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }}>
+      {/* Hero */}
+      <section className="bg-ink text-paper pt-12 pb-32 md:pt-16 md:pb-44 relative">
+        <div className="mx-auto max-w-[1120px] px-6 md:px-10">
+          <h1 className="font-display text-4xl md:text-6xl leading-[0.92] font-bold max-w-lg">
+            One system.<br />
+            <span className="italic font-light text-signal">Every decision.</span>
+          </h1>
+          <p className="mt-3 text-sm text-paper/25 max-w-sm">Signal, culture, audience, capital. Connected. Continuous.</p>
+        </div>
+      </section>
 
-            <section className="bg-ink text-paper pt-12 pb-32 md:pt-16 md:pb-44 relative">
-              <div className="mx-auto max-w-[1120px] px-6 md:px-10">
-                <h1 className="font-display text-4xl md:text-6xl leading-[0.92] font-bold max-w-lg">
-                  One system.<br />
-                  <span className="italic font-light text-signal">Every decision.</span>
-                </h1>
-                <p className="mt-3 text-sm text-paper/25 max-w-sm">Signal, culture, audience, capital. Connected. Continuous.</p>
-              </div>
-            </section>
+      {/* System map — persistent anchor */}
+      <section className="mx-auto max-w-[1120px] px-4 md:px-8 -mt-28 md:-mt-40 relative z-10">
+        <SystemMap
+          state={currentState}
+          displayConfidence={displayConfidence}
+          mode={mode}
+          output={isResolved ? output : null}
+        />
+      </section>
 
-            {/* System map — overlaps hero, dominant */}
-            <section className="mx-auto max-w-[1120px] px-4 md:px-8 -mt-28 md:-mt-40 relative z-10">
-              <SystemMap state={loop} />
-            </section>
+      {/* Live processing feed + product UI fragments */}
+      <section className="mx-auto max-w-[1120px] px-6 md:px-10 pt-6 md:pt-10 pb-14">
+        <div className="grid md:grid-cols-[1fr_1.05fr] gap-8 md:gap-12 items-start max-w-[900px] mx-auto">
 
-            {/* Live processing feed + product UI fragments */}
-            <section className="mx-auto max-w-[1120px] px-6 md:px-10 pt-6 md:pt-10 pb-14">
-              <div className="grid md:grid-cols-[1fr_1.05fr] gap-8 md:gap-12 items-start max-w-[900px] mx-auto">
+          {/* Left — live feed */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className={`${isEvaluating ? "animate-ping" : "animate-ping"} absolute inline-flex h-full w-full rounded-full ${isEvaluating ? "bg-signal" : isResolved ? "bg-ink" : "bg-mint"} opacity-60`} />
+                <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isEvaluating ? "bg-signal" : isResolved ? "bg-ink" : "bg-mint"}`} />
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/35">
+                {isEvaluating ? "system · evaluating" : isResolved ? "system · locked" : "system · live"}
+              </span>
+            </div>
+            <LiveFeed feed={feed} decision={currentState.decision} />
+          </div>
 
-                {/* Left — live processing feed */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-60" />
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-mint" />
-                    </span>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/35">system · live</span>
-                  </div>
-                  <LiveFeed feed={feed} decision={loop.decision} />
-                </div>
+          {/* Right — product UI fragments */}
+          <div className="grid grid-cols-1 gap-2.5">
+            <FragmentVelocity active={currentState.activeNodes.includes("signal") || isResolved} decision={currentState.decision} />
+            <FragmentAudience active={currentState.activeNodes.includes("culture") || currentState.phase === "converge" || currentState.phase === "decide" || isResolved} />
+            <FragmentSpend decision={currentState.decision} active={currentState.phase === "decide" || currentState.phase === "downstream" || isResolved} />
+          </div>
+        </div>
+      </section>
 
-                {/* Right — product UI fragments */}
-                <div className="grid grid-cols-1 gap-2.5">
-                  <FragmentVelocity active={loop.activeNodes.includes("signal")} decision={loop.decision} />
-                  <FragmentAudience active={loop.activeNodes.includes("culture") || loop.phase === "converge" || loop.phase === "decide"} />
-                  <FragmentSpend decision={loop.decision} active={loop.phase === "decide" || loop.phase === "downstream"} />
-                </div>
-              </div>
-            </section>
-
-            {/* Scenario inputs — feel like injecting a situation into the system */}
-            <section className="mx-auto max-w-[960px] px-6 md:px-10 pb-20 md:pb-28">
-              <div className="border-t border-ink/6 pt-10">
-                <div className="flex items-baseline justify-between mb-5 max-w-[640px] mx-auto">
+      {/* Injection area — scenarios or resolved-state actions */}
+      <section className="mx-auto max-w-[960px] px-6 md:px-10 pb-20 md:pb-28">
+        <div className="border-t border-ink/6 pt-10">
+          <AnimatePresence mode="wait">
+            {isAmbient && (
+              <motion.div
+                key="scenarios"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.35 }}
+                className="max-w-[640px] mx-auto"
+              >
+                <div className="flex items-baseline justify-between mb-5">
                   <p className="font-mono text-[11px] text-ink/40 uppercase tracking-[0.12em]">Inject a scenario</p>
                   <p className="font-mono text-[10px] text-ink/25">the system will respond</p>
                 </div>
-                <div className="flex flex-col gap-2.5 max-w-[640px] mx-auto">
+                <div className="flex flex-col gap-2.5">
                   {SCENARIOS.map((sc) => {
                     const dotClr = sc.likelyDecision === "PUSH" ? "bg-signal" : sc.likelyDecision === "TEST" ? "bg-sun" : "bg-electric";
                     const txtClr = sc.likelyDecision === "PUSH" ? "text-signal" : sc.likelyDecision === "TEST" ? "text-sun" : "text-electric";
                     return (
                       <button
                         key={sc.situation}
-                        onClick={() => launch(sc.input)}
+                        onClick={() => launch(sc)}
                         className="group w-full text-left rounded-xl border border-ink/8 hover:border-ink/25 bg-paper px-5 py-4 transition-all hover:translate-x-[2px]"
                       >
                         <div className="flex items-start justify-between gap-4">
@@ -893,81 +1025,55 @@ export default function CampaignPage() {
                     );
                   })}
                 </div>
-              </div>
-            </section>
-          </motion.div>
-        )}
+              </motion.div>
+            )}
 
-        {/* ── BOOT ────────────────────────────────────── */}
-        {mode === "boot" && (
-          <motion.div key="boot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="mx-auto max-w-[960px] px-6 md:px-10">
-            <div className="max-w-xs py-24 md:py-32">
-              {BOOT.map((line, i) => (
-                <motion.div key={line} initial={{ opacity: 0, x: -5 }} animate={bootIdx >= i ? { opacity: i === bootIdx ? 1 : 0.15, x: 0 } : { opacity: 0, x: -5 }} transition={{ duration: 0.2 }} className="font-mono text-sm mb-2">
-                  <span className="text-ink/15 mr-2">{bootIdx > i ? "✓" : bootIdx === i ? "›" : " "}</span>
-                  <span className={bootIdx === i ? "text-ink" : "text-ink/20"}>{line}</span>
-                </motion.div>
-              ))}
-              <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (bootIdx + 1) / BOOT.length }} transition={{ duration: 0.25 }} className="h-px bg-ink/12 mt-5 origin-left" />
-            </div>
-          </motion.div>
-        )}
+            {isEvaluating && (
+              <motion.div
+                key="evaluating"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="max-w-[640px] mx-auto text-center py-3"
+              >
+                <p className="font-mono text-[11px] text-ink/30 uppercase tracking-[0.14em]">processing</p>
+                <p className="mt-2 text-[14px] text-ink/60 italic">{activeScenario}</p>
+                <p className="mt-1 font-mono text-[10.5px] text-ink/30">
+                  confidence converging · signals aligning · decision resolving
+                </p>
+              </motion.div>
+            )}
 
-        {/* ── CONVERGE ────────────────────────────────── */}
-        {mode === "converge" && output && (
-          <motion.div key="converge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="mx-auto max-w-[960px] px-6 md:px-10 py-12 md:py-20">
-            <SystemMap state={fixedState} />
-          </motion.div>
-        )}
-
-        {/* ── RESULT ──────────────────────────────────── */}
-        {mode === "result" && output && (
-          <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="mx-auto max-w-[960px] px-6 md:px-10">
-
-            <div className="pt-8 md:pt-12 max-w-[480px] mx-auto">
-              <SystemMap state={fixedState} compact />
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className="max-w-md mx-auto mt-6 rounded-xl bg-ink text-paper p-6"
-            >
-              <div className="flex items-end justify-between gap-4 mb-2">
-                <div className="font-display font-bold text-4xl md:text-5xl leading-none flex items-center gap-2">
-                  <span className={decClr(output.decision)}>→</span>{output.decision}
+            {isResolved && output && (
+              <motion.div
+                key="resolved"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="max-w-[640px] mx-auto"
+              >
+                <div className="text-center mb-5">
+                  <p className="font-mono text-[10px] text-ink/30 uppercase tracking-[0.14em]">scenario resolved</p>
+                  <p className="mt-1 text-[13px] text-ink/55 italic">{activeScenario}</p>
                 </div>
-                <div className="flex gap-4 text-xs">
-                  <span className="text-paper/25">{output.confidence}%</span>
-                  <span className={output.risk === "Low" ? "text-mint" : output.risk === "Medium" ? "text-sun" : "text-signal"}>{output.risk}</span>
+                <p className="text-center font-mono text-[10.5px] text-ink/40 mb-6">
+                  projected · {output.outcome}
+                </p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={reset}
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-4 py-2 text-xs font-mono font-medium hover:bg-ink hover:text-paper transition-colors"
+                  >
+                    <span className="group-hover:-translate-x-0.5 transition-transform">↺</span> Inject another scenario
+                  </button>
                 </div>
-              </div>
-              <p className="text-paper/30 text-sm font-mono">{output.deployment}</p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.3 }}
-              className="max-w-md mx-auto mt-4 text-center"
-            >
-              <p className="text-xs text-ink/20 font-mono">{output.outcome}</p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="flex justify-center gap-3 mt-8 pb-16"
-            >
-              <button onClick={reset} className="group inline-flex items-center gap-1.5 rounded-full border border-ink/12 px-4 py-2 text-xs font-medium hover:bg-ink hover:text-paper transition-colors">
-                <span className="group-hover:-translate-x-0.5 transition-transform">←</span> Back to system
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </section>
     </main>
   );
 }
