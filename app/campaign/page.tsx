@@ -163,15 +163,16 @@ function useSystemLoop(): LoopState {
 /* ─── Hero System Map ──────────────────────────────────── */
 
 function SystemMap({ state, compact }: { state: LoopState; compact?: boolean }) {
-  const CX = 300, CY = compact ? 140 : 200, R = compact ? 100 : 145;
-  const VH = compact ? 280 : 400;
+  const CX = 400, CY = compact ? 180 : 280, R = compact ? 130 : 220;
+  const VH = compact ? 360 : 560;
+  const VW = 800;
   const decColor = state.decision === "PUSH" ? "#FF4A1C" : state.decision === "TEST" ? "#FFD24C" : "#2C25FF";
   const isDeciding = state.phase === "decide";
   const isConverging = state.phase === "converge" || isDeciding;
   const isDownstream = state.phase === "downstream";
 
   return (
-    <svg viewBox={`0 0 600 ${VH}`} className={`w-full ${compact ? "max-w-[480px]" : "max-w-[640px]"} mx-auto`} preserveAspectRatio="xMidYMid meet">
+    <svg viewBox={`0 0 ${VW} ${VH}`} className={`w-full ${compact ? "max-w-[600px]" : "max-w-[1040px]"} mx-auto`} preserveAspectRatio="xMidYMid meet">
 
       {/* Connection lines */}
       {MODULES.map((mod) => {
@@ -250,18 +251,18 @@ function SystemMap({ state, compact }: { state: LoopState; compact?: boolean }) 
             )}
             <circle
               cx={mx} cy={my}
-              r={isDs ? 8 : lit ? 6 : 4}
+              r={isDs ? 12 : lit ? 9 : 6}
               fill={lit ? decColor : "#0E0E0E"}
-              opacity={isDs ? 0.75 : lit ? 0.55 : 0.15}
+              opacity={isDs ? 0.8 : lit ? 0.6 : 0.2}
               style={{ transition: "all 0.4s ease" }}
             />
             <text
               x={mx}
-              y={my + (below ? (compact ? 16 : 20) : (compact ? -12 : -16))}
+              y={my + (below ? (compact ? 22 : 28) : (compact ? -16 : -20))}
               textAnchor="middle"
-              className={`${compact ? "text-[7px]" : "text-[9px]"} font-mono`}
+              className={`${compact ? "text-[10px]" : "text-[13px]"} font-mono font-medium`}
               fill={lit ? decColor : "#0E0E0E"}
-              opacity={lit ? 0.5 : 0.2}
+              opacity={lit ? 0.65 : 0.4}
               style={{ transition: "all 0.4s ease" }}
             >
               {mod.label}
@@ -273,26 +274,26 @@ function SystemMap({ state, compact }: { state: LoopState; compact?: boolean }) 
       {/* Center node — the most prominent element */}
       <circle
         cx={CX} cy={CY}
-        r={isDeciding ? 28 : isConverging ? 20 : 16}
+        r={isDeciding ? (compact ? 38 : 52) : isConverging ? (compact ? 32 : 42) : (compact ? 26 : 34)}
         fill={isDeciding || isDownstream ? decColor : "#0E0E0E"}
-        opacity={isDeciding ? 0.95 : isDownstream ? 0.8 : 0.4}
+        opacity={isDeciding ? 0.95 : isDownstream ? 0.85 : 0.55}
         style={{ transition: "all 0.5s ease" }}
       >
         {!isDeciding && !isDownstream && (
-          <animate attributeName="r" values="16;18;16" dur="3s" repeatCount="indefinite" />
+          <animate attributeName="r" values={compact ? "26;29;26" : "34;38;34"} dur="3s" repeatCount="indefinite" />
         )}
       </circle>
 
       {/* Decision text in center */}
       {(isDeciding || isDownstream) && (
-        <text x={CX} y={CY + 5} textAnchor="middle" className={`${compact ? "text-[11px]" : "text-[14px]"} font-mono font-bold`} fill="#FAF7F2">
+        <text x={CX} y={CY + (compact ? 7 : 10)} textAnchor="middle" className={`${compact ? "text-[17px]" : "text-[24px]"} font-mono font-bold tracking-tight`} fill="#FAF7F2">
           {state.decision}
         </text>
       )}
 
       {/* Confidence — subtle, below center when deciding */}
       {isDeciding && !compact && (
-        <text x={CX} y={CY + 46} textAnchor="middle" className="text-[8px] font-mono" fill="#0E0E0E" opacity={0.18}>
+        <text x={CX} y={CY + 76} textAnchor="middle" className="text-[11px] font-mono" fill="#0E0E0E" opacity={0.25}>
           {state.confidence}% confidence
         </text>
       )}
@@ -373,17 +374,18 @@ export default function CampaignPage() {
         {mode === "system" && (
           <motion.div key="system" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.4 }}>
 
-            <section className="bg-ink text-paper pt-14 pb-4 md:pt-20 md:pb-6">
-              <div className="mx-auto max-w-[960px] px-6 md:px-10">
+            <section className="bg-ink text-paper pt-12 pb-32 md:pt-16 md:pb-44 relative">
+              <div className="mx-auto max-w-[1120px] px-6 md:px-10">
                 <h1 className="font-display text-4xl md:text-6xl leading-[0.92] font-bold max-w-lg">
                   One system.<br />
                   <span className="italic font-light text-signal">Every decision.</span>
                 </h1>
-                <p className="mt-4 text-sm text-paper/25 max-w-sm">Signal, culture, audience, capital. Connected. Continuous.</p>
+                <p className="mt-3 text-sm text-paper/25 max-w-sm">Signal, culture, audience, capital. Connected. Continuous.</p>
               </div>
             </section>
 
-            <section className="mx-auto max-w-[960px] px-6 md:px-10 pt-8 md:pt-12">
+            {/* System map — overlaps hero, dominant */}
+            <section className="mx-auto max-w-[1120px] px-4 md:px-8 -mt-28 md:-mt-40 relative z-10">
               <SystemMap state={loop} />
             </section>
 
