@@ -20,21 +20,21 @@ interface ArtistHealth {
   repeatListening: { value: string; state: "strong" | "moderate" | "weak" };
   engagementDepth: { value: string; state: "strong" | "moderate" | "weak" };
   growthState: { label: string; direction: "rising" | "stable" | "declining" };
-  summary: string;
+}
+
+interface CulturalTile {
+  label: string;
+  value: string;
+  type: "film" | "artist" | "audience" | "aesthetic";
 }
 
 interface CulturalIntelligence {
   campaignType: string;
-  reference: string;
   tone: string;
   intent: string;
   constraint: string;
-  /* Mapping layer */
-  filmVisual: string;
-  artistParallels: string;
-  audienceClusters: string;
-  creativeDirection: string;
-  /* Refinement layer */
+  tiles: CulturalTile[];
+  energy: string;
   leanInto: string[];
   avoid: string[];
   refinedPosition: string;
@@ -70,6 +70,11 @@ interface LiveFeedEvent {
   message: string;
 }
 
+interface WhyBlock {
+  connection: string;
+  direction: string;
+}
+
 interface SystemOutput {
   artistHealth: ArtistHealth;
   culture: CulturalIntelligence;
@@ -78,10 +83,11 @@ interface SystemOutput {
   decision: Decision;
   confidence: number;
   risk: "Low" | "Medium" | "High";
-  decisionReason: string;
+  decisionLine: string;
   capitalActions: CapitalAction[];
   execution: ExecutionDirective[];
   liveFeed: LiveFeedEvent[];
+  why: WhyBlock;
 }
 
 /* ─── Engine ────────────────────────────────────────────── */
@@ -99,70 +105,67 @@ function generate(input: CampaignInput): SystemOutput {
   const isEmerging = input.artistStage === "emerging";
   const isEstablished = input.artistStage === "established";
 
-  // ── Artist Health ──
+  /* ── Artist Health ── */
   const artistHealth: ArtistHealth = isEmerging
     ? {
-        fanbaseStrength: { value: "12k monthly", state: "weak" },
+        fanbaseStrength: { value: "12k", state: "weak" },
         repeatListening: { value: "1.4×", state: "moderate" },
         engagementDepth: { value: "High", state: "strong" },
         growthState: { label: "Early traction", direction: "rising" },
-        summary:
-          "Small but deeply engaged audience. Growth signals are present but unconfirmed at scale.",
       }
     : isEstablished
     ? {
-        fanbaseStrength: { value: "2.1M monthly", state: "strong" },
+        fanbaseStrength: { value: "2.1M", state: "strong" },
         repeatListening: { value: "2.8×", state: "strong" },
         engagementDepth: { value: "Moderate", state: "moderate" },
         growthState: { label: "Plateau", direction: "stable" },
-        summary:
-          "Large, loyal audience with strong repeat behaviour. Growth has levelled — new release is an opportunity to re-engage.",
       }
     : {
-        fanbaseStrength: { value: "340k monthly", state: "moderate" },
+        fanbaseStrength: { value: "340k", state: "moderate" },
         repeatListening: { value: "2.1×", state: "strong" },
         engagementDepth: { value: "High", state: "strong" },
         growthState: { label: "Accelerating", direction: "rising" },
-        summary:
-          "Mid-size audience with strong engagement signals. Growth is accelerating — momentum is real.",
       };
 
-  // ── Cultural Intelligence ──
+  /* ── Cultural Intelligence ── */
   const culture: CulturalIntelligence = isEmerging
     ? {
-        campaignType: "Discovery campaign",
-        reference: "Raw studio session, first headline show energy",
+        campaignType: "Discovery",
         tone: "Lo-fi, raw, unfiltered",
         intent: "Authenticity + discovery",
-        constraint: "No over-polished assets. Nothing that breaks the narrative.",
-        filmVisual: "Grainy backstage footage, handheld camera, natural light",
-        artistParallels: "Early PinkPantheress, Clairo bedroom era, pre-fame Billie Eilish",
-        audienceClusters: "Taste-first listeners, indie playlist followers, micro-community hubs",
-        creativeDirection: "Intimacy over production value. Let the rawness be the hook.",
+        constraint: "Nothing over-polished. Protect the narrative.",
+        tiles: [
+          { label: "Film", value: "Grainy backstage, handheld, natural light", type: "film" },
+          { label: "Artist", value: "Early PinkPantheress, Clairo bedroom era", type: "artist" },
+          { label: "Audience", value: "Taste-first listeners, micro-communities", type: "audience" },
+          { label: "Aesthetic", value: "Intimacy over production value", type: "aesthetic" },
+        ],
+        energy: "The artist people find — not the artist being pushed.",
         leanInto: [
           "Behind-the-scenes authenticity",
           "Fan-first content (DMs, small shows, raw takes)",
           "Platform-native formats (Stories, lo-fi Reels)",
         ],
         avoid: [
-          "Polished music videos that feel disconnected from stage",
-          "Generic playlist pitching without narrative",
+          "Polished videos that feel disconnected",
+          "Generic playlist pitching",
           "Influencer placements that dilute credibility",
         ],
-        refinedPosition:
-          "Position as discovery — the artist people find, not the artist being pushed.",
+        refinedPosition: "Position as discovery.",
       }
     : isEstablished
     ? {
-        campaignType: "Scale campaign",
-        reference: "Arena-level confidence, catalogue moment",
+        campaignType: "Scale",
         tone: "Cinematic, high-production",
         intent: "Scale + cultural positioning",
-        constraint: "No cheap reach. Everything must match stature.",
-        filmVisual: "Widescreen cinematography, editorial-grade stills, monument shots",
-        artistParallels: "Peak Drake rollout, Beyoncé visual album precision",
-        audienceClusters: "Mainstream pop crossover, playlist power users, cultural commentators",
-        creativeDirection: "Every asset is an event. Scale the moment, not the noise.",
+        constraint: "No cheap reach. Match the stature.",
+        tiles: [
+          { label: "Film", value: "Widescreen cinematography, monument shots", type: "film" },
+          { label: "Artist", value: "Peak Drake rollout, Beyoncé visual precision", type: "artist" },
+          { label: "Audience", value: "Mainstream crossover, cultural commentators", type: "audience" },
+          { label: "Aesthetic", value: "Every asset is an event", type: "aesthetic" },
+        ],
+        energy: "The release everyone talks about — not just hears.",
         leanInto: [
           "Premium hero content (short film, visual EP)",
           "Editorial partnerships and press exclusives",
@@ -170,59 +173,59 @@ function generate(input: CampaignInput): SystemOutput {
         ],
         avoid: [
           "High-volume low-quality content",
-          "Trend-chasing formats that feel beneath the artist",
+          "Trend-chasing formats beneath the artist",
           "Discount pricing or bundle gimmicks",
         ],
-        refinedPosition:
-          "Position as cultural moment — the release everyone talks about, not just hears.",
+        refinedPosition: "Position as cultural moment.",
       }
     : {
-        campaignType: "Momentum campaign",
-        reference: "Breakout single, underground-to-mainstream crossover",
+        campaignType: "Momentum",
         tone: "Energetic, narrative-driven",
         intent: "Credibility + momentum",
-        constraint: "No generic content. Every asset must build the story.",
-        filmVisual: "Dynamic performance footage, split-screen narratives, street-level energy",
-        artistParallels: "Central Cee breakout phase, early Doja Cat, Raye pre-Grammy run",
-        audienceClusters: "Genre-adjacent explorers, playlist curators, music Twitter/TikTok opinion",
-        creativeDirection: "Tell the story of the moment. This is the breakout — make it feel inevitable.",
+        constraint: "Every asset builds the story.",
+        tiles: [
+          { label: "Film", value: "Dynamic performance, split-screen, street energy", type: "film" },
+          { label: "Artist", value: "Central Cee breakout, early Doja Cat, Raye pre-Grammy", type: "artist" },
+          { label: "Audience", value: "Genre explorers, playlist curators, music Twitter", type: "audience" },
+          { label: "Aesthetic", value: "The breakout — make it feel inevitable", type: "aesthetic" },
+        ],
+        energy: "The artist on the edge of breaking through.",
         leanInto: [
-          "Narrative-first content (the story behind the track)",
+          "Narrative-first content (story behind the track)",
           "Creator partnerships that build credibility",
           "Staggered release to build anticipation",
         ],
         avoid: [
           "Over-saturation that kills the build",
-          "Generic paid ads without narrative framing",
+          "Generic paid ads without narrative",
           "Skipping organic validation for paid scale",
         ],
-        refinedPosition:
-          "Position as momentum — the artist on the edge of breaking through.",
+        refinedPosition: "Position as momentum.",
       };
 
-  // ── Signals (now reference artist health) ──
+  /* ── Signals ── */
   const signals: SignalRead[] = isEstablished
     ? [
         { label: "Save rate", value: "5.1%", strength: "strong" },
-        { label: "Audience reach", value: "+24%", strength: "strong" },
+        { label: "Reach", value: "+24%", strength: "strong" },
         { label: "Playlist velocity", value: "High", strength: "strong" },
-        { label: "Early skip rate", value: "18%", strength: "moderate" },
+        { label: "Skip rate", value: "18%", strength: "moderate" },
       ]
     : isEmerging
     ? [
         { label: "Save rate", value: "3.2%", strength: "moderate" },
-        { label: "Audience reach", value: "−12%", strength: "weak" },
+        { label: "Reach", value: "−12%", strength: "weak" },
         { label: "Playlist velocity", value: "Low", strength: "weak" },
-        { label: "Early engagement", value: "High", strength: "strong" },
+        { label: "Engagement", value: "High", strength: "strong" },
       ]
     : [
         { label: "Save rate", value: "4.1%", strength: "strong" },
-        { label: "Audience reach", value: "+8%", strength: "moderate" },
-        { label: "Playlist velocity", value: "Medium", strength: "moderate" },
-        { label: "Early engagement", value: "High", strength: "strong" },
+        { label: "Reach", value: "+8%", strength: "moderate" },
+        { label: "Playlist velocity", value: "Med", strength: "moderate" },
+        { label: "Engagement", value: "High", strength: "strong" },
       ];
 
-  // ── Decision ──
+  /* ── Decision ── */
   let decision: Decision;
   let confidence: number;
   let risk: "Low" | "Medium" | "High";
@@ -253,182 +256,146 @@ function generate(input: CampaignInput): SystemOutput {
     risk = "High";
   }
 
-  // ── Tension (now includes health) ──
+  /* ── Tension ── */
   const tension: Tension = isEmerging
     ? {
-        signal: "Strong early engagement suggests scaling potential",
-        culture: "Cultural context requires raw, authentic positioning",
-        health:
-          "Artist health shows small but deeply engaged audience — scaling too fast risks dilution",
+        signal: "Early engagement suggests scaling potential",
+        culture: "Authentic positioning required — can't force it",
+        health: "Small audience, deep engagement — dilution risk",
         resolution:
           decision === "TEST"
-            ? "System resolves: validate signal before scaling. Protect the narrative. Let the audience grow into the artist."
-            : "System resolves: hold until signal is strong enough to scale without compromising authenticity.",
+            ? "Validate before scaling. Protect the narrative."
+            : "Hold until signal supports scale without compromise.",
       }
     : isEstablished
     ? {
-        signal: "Strong signal across all metrics supports aggressive deployment",
-        culture: "Cultural context demands premium execution at every touchpoint",
-        health:
-          "Artist health shows plateau — this release is a re-engagement opportunity, not maintenance",
-        resolution:
-          "System resolves: push aggressively, but every asset must match stature. Use this as a catalyst to reactivate the base.",
+        signal: "Strong across all metrics — supports deployment",
+        culture: "Premium execution at every touchpoint",
+        health: "Plateau — this is a re-engagement opportunity",
+        resolution: "Push aggressively. Every asset matches stature.",
       }
     : {
-        signal: "Mixed signal — strong engagement, moderate reach",
-        culture: "Narrative positioning requires credibility over volume",
-        health:
-          "Artist health shows accelerating growth — momentum is real and should be protected",
+        signal: "Strong engagement, moderate reach",
+        culture: "Credibility over volume",
+        health: "Accelerating growth — momentum is real",
         resolution:
           decision === "PUSH"
-            ? "System resolves: push with narrative-first content. Ride the momentum, but story over scale."
+            ? "Ride the momentum. Story over scale."
             : decision === "TEST"
-            ? "System resolves: test narrative formats before committing budget to scale."
-            : "System resolves: hold and strengthen narrative foundation before spending.",
+            ? "Test narrative formats before committing scale."
+            : "Strengthen foundation before spending.",
       };
 
-  // ── Decision reason (now references health + culture) ──
-  const decisionReason =
+  /* ── Decision line ── */
+  const decisionLine =
     decision === "PUSH"
-      ? `Signal supports deployment. Artist health (${artistHealth.growthState.label.toLowerCase()}) and cultural direction (${culture.intent.toLowerCase()}) align. System is confident.`
+      ? `Health (${artistHealth.growthState.label.toLowerCase()}) + culture (${culture.intent.toLowerCase()}) align. Deploy.`
       : decision === "TEST"
-      ? `Signal is promising but unconfirmed. Artist health (${artistHealth.growthState.label.toLowerCase()}) suggests caution. Deploying capital to validate within ${culture.tone.toLowerCase()} framework.`
-      : `Insufficient signal to justify spend. Artist health (${artistHealth.growthState.label.toLowerCase()}) and cultural frame require stronger evidence before deployment.`;
+      ? `Health (${artistHealth.growthState.label.toLowerCase()}) suggests caution. Validate within ${culture.tone.split(",")[0].toLowerCase()} frame.`
+      : `Insufficient signal. Hold until evidence supports ${culture.intent.toLowerCase()}.`;
 
-  // ── Capital actions ──
+  /* ── Capital actions ── */
   const capitalActions: CapitalAction[] =
     decision === "PUSH"
       ? [
-          {
-            action: "Increase content investment",
-            rationale: `Narrative-driven assets aligned with ${culture.tone.toLowerCase()} direction`,
-            amount: formatBudget(Math.round(budget * 0.35)),
-          },
-          {
-            action: "Scale paid reach",
-            rationale: "Signal confirms audience. Deploy to extend momentum.",
-            amount: formatBudget(Math.round(budget * 0.4)),
-          },
-          {
-            action: "Activate creator network",
-            rationale: "Targeted voices that match campaign positioning",
-            amount: formatBudget(Math.round(budget * 0.15)),
-          },
-          {
-            action: "Hold reserve",
-            rationale: "Available for reallocation based on week-1 signal",
-            amount: formatBudget(Math.round(budget * 0.1)),
-          },
+          { action: "Content", rationale: `${culture.tone.split(",")[0]} assets`, amount: formatBudget(Math.round(budget * 0.35)) },
+          { action: "Paid reach", rationale: "Signal confirms. Extend.", amount: formatBudget(Math.round(budget * 0.4)) },
+          { action: "Creators", rationale: "Voices that match positioning", amount: formatBudget(Math.round(budget * 0.15)) },
+          { action: "Reserve", rationale: "Week-1 reallocation", amount: formatBudget(Math.round(budget * 0.1)) },
         ]
       : decision === "TEST"
       ? [
-          {
-            action: "Increase content investment",
-            rationale: "Test formats within cultural frame before scaling",
-            amount: formatBudget(Math.round(budget * 0.4)),
-          },
-          {
-            action: "Delay paid spend",
-            rationale: "Organic-first. Paid only after 48hr signal confirmation.",
-            amount: formatBudget(Math.round(budget * 0.25)),
-          },
-          {
-            action: "Focus on audience understanding",
-            rationale: "Map response patterns before committing budget",
-            amount: formatBudget(Math.round(budget * 0.2)),
-          },
-          {
-            action: "Hold reserve",
-            rationale: "Larger reserve for rapid reallocation if signal confirms",
-            amount: formatBudget(Math.round(budget * 0.15)),
-          },
+          { action: "Content", rationale: "Test formats within cultural frame", amount: formatBudget(Math.round(budget * 0.4)) },
+          { action: "Paid (delayed)", rationale: "After 48hr signal only", amount: formatBudget(Math.round(budget * 0.25)) },
+          { action: "Audience intel", rationale: "Map patterns first", amount: formatBudget(Math.round(budget * 0.2)) },
+          { action: "Reserve", rationale: "Rapid reallocation ready", amount: formatBudget(Math.round(budget * 0.15)) },
         ]
       : [
-          {
-            action: "Hold all paid spend",
-            rationale: "No deployment until signal justifies it",
-            amount: formatBudget(Math.round(budget * 0)),
-          },
-          {
-            action: "Invest in audience research",
-            rationale: "Build understanding before building campaign",
-            amount: formatBudget(Math.round(budget * 0.35)),
-          },
-          {
-            action: "Minimal content production",
-            rationale: `Baseline ${culture.tone.toLowerCase()} assets only`,
-            amount: formatBudget(Math.round(budget * 0.35)),
-          },
-          {
-            action: "Full reserve",
-            rationale: "Capital preserved for deployment when signal arrives",
-            amount: formatBudget(Math.round(budget * 0.3)),
-          },
+          { action: "Paid spend", rationale: "Held — no deployment", amount: "$0" },
+          { action: "Research", rationale: "Build understanding first", amount: formatBudget(Math.round(budget * 0.35)) },
+          { action: "Content (minimal)", rationale: `Baseline ${culture.tone.split(",")[0].toLowerCase()} only`, amount: formatBudget(Math.round(budget * 0.35)) },
+          { action: "Reserve", rationale: "Preserved for deployment", amount: formatBudget(Math.round(budget * 0.3)) },
         ];
 
-  // ── Execution ──
+  /* ── Execution ── */
   const execution: ExecutionDirective[] =
     decision === "PUSH"
       ? culture.tone.includes("Lo-fi")
         ? [
-            { label: "Content direction", detail: "Raw, unpolished assets. Avoid over-production." },
-            { label: "Creator strategy", detail: "Authentic voices only. Storytelling over reach." },
-            { label: "Platform timing", detail: "Front-load organic, scale paid after 48hr signal." },
+            { label: "Content", detail: "Raw, unpolished. No over-production." },
+            { label: "Creators", detail: "Authentic voices. Storytelling > reach." },
+            { label: "Timing", detail: "Organic first → paid at 48hr." },
           ]
         : culture.tone.includes("Cinematic")
         ? [
-            { label: "Content direction", detail: "High-production hero assets. Cinematic first impression." },
-            { label: "Creator strategy", detail: "Established voices + editorial placements." },
-            { label: "Platform timing", detail: "Simultaneous paid + organic. Maximise day-1 reach." },
+            { label: "Content", detail: "Hero assets. Cinematic first impression." },
+            { label: "Creators", detail: "Editorial voices + press placements." },
+            { label: "Timing", detail: "Simultaneous launch. Day-1 reach." },
           ]
         : [
-            { label: "Content direction", detail: "Narrative-driven assets. Story over volume." },
-            { label: "Creator strategy", detail: "Genre-adjacent creators who build credibility." },
-            { label: "Platform timing", detail: "Staggered rollout. Build momentum across 7 days." },
+            { label: "Content", detail: "Narrative-driven. Story > volume." },
+            { label: "Creators", detail: "Genre-adjacent. Credibility first." },
+            { label: "Timing", detail: "Staggered. 7-day momentum build." },
           ]
       : decision === "TEST"
       ? [
-          { label: "Content direction", detail: `${culture.tone} content. Test formats before committing.` },
-          { label: "Creator strategy", detail: "Micro-creators. Alignment over follower count." },
-          { label: "Platform timing", detail: "Organic first. Paid only after signal confirms." },
+          { label: "Content", detail: `${culture.tone.split(",")[0]}. Test before committing.` },
+          { label: "Creators", detail: "Micro-creators. Alignment > reach." },
+          { label: "Timing", detail: "Organic first. Paid after confirmation." },
         ]
       : [
-          { label: "Content direction", detail: `Minimal output. ${culture.tone} tone when ready.` },
-          { label: "Creator strategy", detail: "Hold outreach. Research aligned voices." },
-          { label: "Platform timing", detail: "No paid spend until signal justifies." },
+          { label: "Content", detail: `Minimal. ${culture.tone.split(",")[0]} when ready.` },
+          { label: "Creators", detail: "Hold outreach. Research first." },
+          { label: "Timing", detail: "No paid until signal justifies." },
         ];
 
-  // ── Live feed events ──
+  /* ── Live feed ── */
   const liveFeed: LiveFeedEvent[] =
     decision === "PUSH"
       ? [
-          { time: "Now", type: "monitor", message: "System active. Monitoring all signal channels." },
-          { time: "+6h", type: "monitor", message: `Tracking save rate against ${culture.campaignType.toLowerCase()} baseline.` },
-          { time: "+24h", type: "trigger", message: "First signal evaluation. Checking playlist velocity + engagement depth." },
-          { time: "+24h", type: "adjust", message: "If save rate drops below 3% → downgrade to TEST. Pause paid." },
-          { time: "+48h", type: "trigger", message: "Second evaluation. Cross-reference artist health for sustained engagement." },
-          { time: "+48h", type: "adjust", message: "If playlist adds spike → increase paid support immediately." },
-          { time: "+72h", type: "monitor", message: "Full campaign review. Reallocate capital based on 72hr data." },
+          { time: "00:00", type: "monitor", message: "Monitoring all signal channels" },
+          { time: "06:00", type: "monitor", message: `Tracking save rate against ${culture.campaignType.toLowerCase()} baseline` },
+          { time: "24:00", type: "trigger", message: "First evaluation — playlist velocity + engagement" },
+          { time: "24:00", type: "adjust", message: "Save rate < 3% → downgrade to TEST" },
+          { time: "48:00", type: "trigger", message: "Cross-referencing artist health" },
+          { time: "48:00", type: "adjust", message: "Playlist spike → increase paid immediately" },
+          { time: "72:00", type: "monitor", message: "Full review. Reallocate on 72hr data." },
         ]
       : decision === "TEST"
       ? [
-          { time: "Now", type: "monitor", message: "System active. Observing organic response before deployment." },
-          { time: "+12h", type: "monitor", message: "Tracking early engagement against artist health baseline." },
-          { time: "+24h", type: "trigger", message: "First signal check. Looking for save rate confirmation." },
-          { time: "+24h", type: "adjust", message: "If save rate exceeds 4.5% → upgrade to PUSH. Scale spend." },
-          { time: "+48h", type: "trigger", message: "Content format evaluation. Which formats are resonating?" },
-          { time: "+48h", type: "adjust", message: "If no signal after 48h → downgrade to HOLD. Preserve capital." },
-          { time: "+7d", type: "monitor", message: "Full test cycle complete. System recommends next phase." },
+          { time: "00:00", type: "monitor", message: "Observing organic response" },
+          { time: "12:00", type: "monitor", message: "Engagement vs. artist health baseline" },
+          { time: "24:00", type: "trigger", message: "Save rate check" },
+          { time: "24:00", type: "adjust", message: "Save > 4.5% → upgrade to PUSH" },
+          { time: "48:00", type: "trigger", message: "Format evaluation — what resonates?" },
+          { time: "48:00", type: "adjust", message: "No signal 48h → downgrade to HOLD" },
+          { time: "168:00", type: "monitor", message: "Test cycle complete. Next phase." },
         ]
       : [
-          { time: "Now", type: "monitor", message: "System active. Monitoring for signal emergence." },
-          { time: "+24h", type: "monitor", message: "Watching organic save rate and audience behaviour." },
-          { time: "+48h", type: "trigger", message: "Signal check. Any organic traction?" },
-          { time: "+48h", type: "adjust", message: "If organic save rate crosses 3% → upgrade to TEST." },
-          { time: "+7d", type: "monitor", message: "Weekly artist health update. Re-evaluate growth state." },
-          { time: "+7d", type: "adjust", message: "If new audience data → re-evaluate cultural frame." },
-          { time: "+14d", type: "monitor", message: "Full hold review. System decides: continue hold or activate." },
+          { time: "00:00", type: "monitor", message: "Monitoring for signal emergence" },
+          { time: "24:00", type: "monitor", message: "Watching organic save rate" },
+          { time: "48:00", type: "trigger", message: "Signal check — any traction?" },
+          { time: "48:00", type: "adjust", message: "Save > 3% → upgrade to TEST" },
+          { time: "168:00", type: "monitor", message: "Weekly health update" },
+          { time: "168:00", type: "adjust", message: "New data → re-evaluate frame" },
+          { time: "336:00", type: "monitor", message: "Hold review — continue or activate" },
         ];
+
+  /* ── Why ── */
+  const why: WhyBlock = isEmerging
+    ? {
+        connection: `${culture.tiles[1].value} built audiences through authenticity, not volume. The cultural references (${culture.tiles[0].value.split(",")[0].toLowerCase()}) reinforce this — raw, unpolished, real.`,
+        direction: `At ${artistHealth.fanbaseStrength.value} monthly listeners with ${artistHealth.engagementDepth.value.toLowerCase()} engagement, the audience is there but small. A ${culture.campaignType.toLowerCase()} campaign protects what's working while testing scale.`,
+      }
+    : isEstablished
+    ? {
+        connection: `${culture.tiles[1].value} set the standard for high-production rollouts. The visual language (${culture.tiles[0].value.split(",")[0].toLowerCase()}) signals cultural weight, not just marketing spend.`,
+        direction: `With ${artistHealth.fanbaseStrength.value} monthly listeners but a ${artistHealth.growthState.label.toLowerCase()} growth state, this release needs to reactivate — not maintain. The ${culture.campaignType.toLowerCase()} frame gives it room.`,
+      }
+    : {
+        connection: `${culture.tiles[1].value} all broke through with narrative-driven campaigns. The visual energy (${culture.tiles[0].value.split(",")[0].toLowerCase()}) matches the urgency of a breakout moment.`,
+        direction: `At ${artistHealth.fanbaseStrength.value} monthly and ${artistHealth.growthState.label.toLowerCase()}, the momentum is real. A ${culture.campaignType.toLowerCase()} campaign channels it without burning it.`,
+      };
 
   return {
     artistHealth,
@@ -438,10 +405,11 @@ function generate(input: CampaignInput): SystemOutput {
     decision,
     confidence,
     risk,
-    decisionReason,
+    decisionLine,
     capitalActions,
     execution,
     liveFeed,
+    why,
   };
 }
 
@@ -468,18 +436,31 @@ function feedIcon(t: "monitor" | "trigger" | "adjust"): string {
 function feedColor(t: "monitor" | "trigger" | "adjust"): string {
   return t === "monitor" ? "text-ink/40" : t === "trigger" ? "text-sun" : "text-signal";
 }
+function tileIcon(t: "film" | "artist" | "audience" | "aesthetic"): string {
+  return t === "film" ? "◈" : t === "artist" ? "◎" : t === "audience" ? "◇" : "◆";
+}
+
+/* ─── Boot Sequence ─────────────────────────────────────── */
+
+const BOOT_LINES = [
+  "Initialising system…",
+  "Loading artist baseline…",
+  "Mapping cultural landscape…",
+  "Reading signal…",
+  "Running.",
+];
+const BOOT_LINE_DELAY = 600;
+const BOOT_TOTAL = BOOT_LINES.length * BOOT_LINE_DELAY + 400;
 
 /* ─── System Run Phases ─────────────────────────────────── */
 
 const PHASE_COUNT = 9;
-// 0: artist health, 1: cultural mapping, 2: cultural refinement,
-// 3: signals, 4: tension, 5: decision, 6: capital, 7: execution, 8: live feed
-const PHASE_DELAY = 1200;
+const PHASE_DELAY = 1100;
 
 /* ─── Page ──────────────────────────────────────────────── */
 
 export default function CampaignPage() {
-  const [step, setStep] = useState<"input" | "running" | "complete">("input");
+  const [step, setStep] = useState<"input" | "booting" | "running" | "complete">("input");
   const [input, setInput] = useState<CampaignInput>({
     trackName: "",
     artistStage: "breaking",
@@ -487,18 +468,35 @@ export default function CampaignPage() {
   });
   const [output, setOutput] = useState<SystemOutput | null>(null);
   const [phase, setPhase] = useState(0);
+  const [bootLine, setBootLine] = useState(0);
   const [feedIndex, setFeedIndex] = useState(0);
+  const [whyOpen, setWhyOpen] = useState(false);
   const phaseRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const budgetValue = BUDGET_MAP(input.budget);
 
+  /* ── Start → boot → run ── */
   const handleStart = useCallback(() => {
     if (!input.trackName.trim()) return;
     setOutput(generate(input));
-    setStep("running");
+    setStep("booting");
+    setBootLine(0);
     setPhase(0);
     setFeedIndex(0);
+    setWhyOpen(false);
   }, [input]);
+
+  // Boot sequence progression
+  useEffect(() => {
+    if (step !== "booting") return;
+    if (bootLine < BOOT_LINES.length - 1) {
+      const t = setTimeout(() => setBootLine((b) => b + 1), BOOT_LINE_DELAY);
+      return () => clearTimeout(t);
+    } else {
+      const t = setTimeout(() => setStep("running"), 400);
+      return () => clearTimeout(t);
+    }
+  }, [step, bootLine]);
 
   // Progressive phase reveal
   useEffect(() => {
@@ -512,11 +510,11 @@ export default function CampaignPage() {
     }
   }, [step, phase]);
 
-  // Live feed drip — one event every 800ms after phase 8 appears
+  // Live feed drip
   useEffect(() => {
     if (phase < 8 || !output) return;
     if (feedIndex < output.liveFeed.length - 1) {
-      const t = setTimeout(() => setFeedIndex((i) => i + 1), 800);
+      const t = setTimeout(() => setFeedIndex((i) => i + 1), 700);
       return () => clearTimeout(t);
     }
   }, [phase, feedIndex, output]);
@@ -526,10 +524,7 @@ export default function CampaignPage() {
     if (step === "running" || step === "complete") {
       const el = phaseRefs.current[phase];
       if (el) {
-        setTimeout(
-          () => el.scrollIntoView({ behavior: "smooth", block: "start" }),
-          150
-        );
+        setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
       }
     }
   }, [step, phase]);
@@ -538,7 +533,9 @@ export default function CampaignPage() {
     setStep("input");
     setOutput(null);
     setPhase(0);
+    setBootLine(0);
     setFeedIndex(0);
+    setWhyOpen(false);
   }, []);
 
   const visible = (i: number) => phase >= i || step === "complete";
@@ -546,7 +543,7 @@ export default function CampaignPage() {
   const fade = (i: number) => ({
     initial: { opacity: 0, y: 16 },
     animate: visible(i) ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 },
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as number[] },
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as number[] },
   });
 
   return (
@@ -554,17 +551,11 @@ export default function CampaignPage() {
       {/* Nav */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-paper/70 border-b border-ink/5">
         <div className="mx-auto max-w-[1440px] px-6 md:px-10 h-16 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-display font-bold tracking-tightest text-lg"
-          >
+          <Link href="/" className="flex items-center gap-2 font-display font-bold tracking-tightest text-lg">
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-signal" />
             decision/system_
           </Link>
-          <Link
-            href="/"
-            className="text-sm text-ink/60 hover:text-signal transition-colors"
-          >
+          <Link href="/" className="text-sm text-ink/60 hover:text-signal transition-colors">
             ← Overview
           </Link>
         </div>
@@ -573,26 +564,21 @@ export default function CampaignPage() {
       {/* Hero */}
       <section className="relative bg-ink text-paper py-16 md:py-24">
         <div className="mx-auto max-w-[1440px] px-6 md:px-10">
-          <span className="eyebrow text-paper/50 mb-4 block">
-            Campaign System
-          </span>
-          <p className="text-paper/45 text-sm md:text-base mb-4">
-            Most music marketing spend is guesswork.
-          </p>
+          <span className="eyebrow text-paper/50 mb-4 block">Campaign System</span>
           <h1 className="headline font-display text-5xl md:text-7xl leading-[0.95]">
-            AI runs
-            <br />
+            AI runs<br />
             <span className="italic font-light text-signal">the campaign.</span>
           </h1>
-          <p className="mt-6 text-base md:text-lg text-paper/60 max-w-lg">
-            From decision → content → spend → optimisation. Continuously.
+          <p className="mt-6 text-base md:text-lg text-paper/50 max-w-md">
+            Decision → content → spend → optimisation. Continuously.
           </p>
         </div>
       </section>
 
       <div className="mx-auto max-w-[1440px] px-6 md:px-10 py-16 md:py-24">
+
         <AnimatePresence mode="wait">
-          {/* ── INPUT ───────────────────────────────────── */}
+          {/* ── INPUT ─────────────────────────────────── */}
           {step === "input" && (
             <motion.div
               key="input"
@@ -605,37 +591,27 @@ export default function CampaignPage() {
               <span className="eyebrow text-ink/50 mb-6 block">Input</span>
 
               <div className="mb-8">
-                <label className="block text-sm font-medium text-ink/60 mb-2">
-                  Track name
-                </label>
+                <label className="block text-sm font-medium text-ink/60 mb-2">Track name</label>
                 <input
                   type="text"
                   value={input.trackName}
-                  onChange={(e) =>
-                    setInput((p) => ({ ...p, trackName: e.target.value }))
-                  }
+                  onChange={(e) => setInput((p) => ({ ...p, trackName: e.target.value }))}
                   placeholder="e.g. Midnight Drive"
                   className="w-full rounded-xl border border-ink/15 bg-cream px-5 py-3.5 text-base text-ink placeholder:text-ink/30 focus:outline-none focus:border-ink/40 transition-colors"
                 />
               </div>
 
               <div className="mb-8">
-                <label className="block text-sm font-medium text-ink/60 mb-3">
-                  Artist stage
-                </label>
+                <label className="block text-sm font-medium text-ink/60 mb-3">Artist stage</label>
                 <div className="flex gap-3">
-                  {(
-                    [
-                      ["emerging", "Emerging"],
-                      ["breaking", "Breaking"],
-                      ["established", "Established"],
-                    ] as [ArtistStage, string][]
-                  ).map(([value, label]) => (
+                  {([
+                    ["emerging", "Emerging"],
+                    ["breaking", "Breaking"],
+                    ["established", "Established"],
+                  ] as [ArtistStage, string][]).map(([value, label]) => (
                     <button
                       key={value}
-                      onClick={() =>
-                        setInput((p) => ({ ...p, artistStage: value }))
-                      }
+                      onClick={() => setInput((p) => ({ ...p, artistStage: value }))}
                       className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
                         input.artistStage === value
                           ? "bg-ink text-paper border-ink"
@@ -649,18 +625,14 @@ export default function CampaignPage() {
               </div>
 
               <div className="mb-10">
-                <label className="block text-sm font-medium text-ink/60 mb-2">
-                  Budget
-                </label>
+                <label className="block text-sm font-medium text-ink/60 mb-2">Budget</label>
                 <div className="flex items-center gap-4">
                   <input
                     type="range"
                     min={0}
                     max={100}
                     value={input.budget}
-                    onChange={(e) =>
-                      setInput((p) => ({ ...p, budget: Number(e.target.value) }))
-                    }
+                    onChange={(e) => setInput((p) => ({ ...p, budget: Number(e.target.value) }))}
                     className="flex-1 h-2 rounded-full appearance-none bg-ink/10 accent-ink cursor-pointer"
                   />
                   <span className="font-display font-bold text-xl min-w-[5rem] text-right">
@@ -679,634 +651,376 @@ export default function CampaignPage() {
                 className="group inline-flex items-center gap-2.5 rounded-full bg-ink text-paper px-7 py-3.5 text-sm font-medium hover:bg-signal transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 Run System
-                <span className="group-hover:translate-x-1 transition-transform">
-                  →
-                </span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
               </button>
+            </motion.div>
+          )}
+
+          {/* ── BOOT SEQUENCE ─────────────────────────── */}
+          {step === "booting" && (
+            <motion.div
+              key="boot"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3 }}
+              className="max-w-md py-24"
+            >
+              <div className="space-y-3">
+                {BOOT_LINES.map((line, i) => (
+                  <motion.div
+                    key={line}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={
+                      bootLine >= i
+                        ? { opacity: i === bootLine ? 1 : 0.35, x: 0 }
+                        : { opacity: 0, x: -8 }
+                    }
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    className="font-mono text-sm"
+                  >
+                    <span className="text-ink/25 mr-3">
+                      {bootLine > i ? "✓" : bootLine === i ? "›" : " "}
+                    </span>
+                    <span className={bootLine === i ? "text-ink" : "text-ink/40"}>
+                      {line}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: (bootLine + 1) / BOOT_LINES.length }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="h-px bg-ink/20 mt-8 origin-left"
+              />
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ── SYSTEM RUN (progressive reveal) ───────── */}
+        {/* ── SYSTEM RUN ─────────────────────────────── */}
         {(step === "running" || step === "complete") && output && (
-          <div className="space-y-16 md:space-y-24">
-            {/* ── Phase 0: Artist Health (persistent) ──── */}
-            <motion.div
-              ref={(el) => {
-                phaseRefs.current[0] = el;
-              }}
-              {...fade(0)}
-            >
-              <span className="eyebrow text-ink/50 mb-6 block">
-                00 — Artist health baseline
-              </span>
-              <div className="rounded-xl border border-ink/10 p-6 md:p-8">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  {[
-                    {
-                      label: "Fanbase strength",
-                      ...output.artistHealth.fanbaseStrength,
-                    },
-                    {
-                      label: "Repeat listening",
-                      ...output.artistHealth.repeatListening,
-                    },
-                    {
-                      label: "Engagement depth",
-                      ...output.artistHealth.engagementDepth,
-                    },
-                  ].map((m) => (
-                    <div key={m.label} className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`w-2 h-2 rounded-full ${healthDot(m.state)}`}
-                        />
-                        <span className="text-xs text-ink/45 uppercase tracking-wider">
-                          {m.label}
-                        </span>
-                      </div>
-                      <div className="font-display font-bold text-xl">
-                        {m.value}
-                      </div>
-                      <div className="text-xs text-ink/40 capitalize">
-                        {m.state}
-                      </div>
+          <div className="space-y-14 md:space-y-20">
+
+            {/* Phase 0: Artist Health */}
+            <motion.div ref={(el) => { phaseRefs.current[0] = el; }} {...fade(0)}>
+              <span className="eyebrow text-ink/40 mb-4 block">00 — Artist health</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: "Fanbase", ...output.artistHealth.fanbaseStrength },
+                  { label: "Repeat", ...output.artistHealth.repeatListening },
+                  { label: "Depth", ...output.artistHealth.engagementDepth },
+                ].map((m) => (
+                  <div key={m.label} className="rounded-xl border border-ink/10 p-4">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${healthDot(m.state)}`} />
+                      <span className="text-xs text-ink/40 uppercase tracking-wider">{m.label}</span>
+                    </div>
+                    <div className="font-display font-bold text-2xl">{m.value}</div>
+                  </div>
+                ))}
+                <div className="rounded-xl border border-ink/10 p-4">
+                  <div className="text-xs text-ink/40 uppercase tracking-wider mb-1.5">Growth</div>
+                  <div className="font-display font-bold text-2xl flex items-center gap-2">
+                    <span className={directionColor(output.artistHealth.growthState.direction)}>
+                      {directionArrow(output.artistHealth.growthState.direction)}
+                    </span>
+                    {output.artistHealth.growthState.label}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Phase 1: Cultural Board */}
+            <motion.div ref={(el) => { phaseRefs.current[1] = el; }} {...fade(1)}>
+              <span className="eyebrow text-ink/40 mb-4 block">01 — Cultural intelligence</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {output.culture.tiles.map((tile) => (
+                  <div key={tile.label} className="rounded-xl bg-cream border border-ink/8 p-4 group">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-ink/25 text-xs">{tileIcon(tile.type)}</span>
+                      <span className="text-xs text-ink/45 uppercase tracking-wider font-medium">{tile.label}</span>
+                    </div>
+                    <p className="text-sm text-ink/70 leading-snug">{tile.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-px bg-ink/15" />
+                <p className="text-base text-ink/60 font-display italic">{output.culture.energy}</p>
+              </div>
+            </motion.div>
+
+            {/* Phase 2: Cultural Refinement */}
+            <motion.div ref={(el) => { phaseRefs.current[2] = el; }} {...fade(2)}>
+              <span className="eyebrow text-ink/40 mb-4 block">02 — Refined alignment</span>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-ink/10 p-5">
+                  <div className="text-xs font-medium text-mint uppercase tracking-wider mb-3">Lean into</div>
+                  {output.culture.leanInto.map((item) => (
+                    <div key={item} className="text-sm text-ink/70 flex items-start gap-2 mb-1.5 last:mb-0">
+                      <span className="text-mint shrink-0">+</span> {item}
                     </div>
                   ))}
-                  <div className="space-y-1">
-                    <div className="text-xs text-ink/45 uppercase tracking-wider">
-                      Growth state
-                    </div>
-                    <div className="font-display font-bold text-xl flex items-center gap-2">
-                      <span
-                        className={directionColor(
-                          output.artistHealth.growthState.direction
-                        )}
-                      >
-                        {directionArrow(
-                          output.artistHealth.growthState.direction
-                        )}
-                      </span>
-                      {output.artistHealth.growthState.label}
-                    </div>
-                    <div className="text-xs text-ink/40 capitalize">
-                      {output.artistHealth.growthState.direction}
-                    </div>
-                  </div>
                 </div>
-                <p className="text-sm text-ink/60 border-t border-ink/10 pt-4">
-                  {output.artistHealth.summary}
-                </p>
-                <p className="text-xs text-ink/35 mt-2 italic">
-                  This layer persists throughout the system run. Every decision
-                  references it.
-                </p>
+                <div className="rounded-xl border border-ink/10 p-5">
+                  <div className="text-xs font-medium text-signal uppercase tracking-wider mb-3">Avoid</div>
+                  {output.culture.avoid.map((item) => (
+                    <div key={item} className="text-sm text-ink/70 flex items-start gap-2 mb-1.5 last:mb-0">
+                      <span className="text-signal shrink-0">−</span> {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-3">
+                <span className="w-8 h-px bg-ink/15" />
+                <p className="font-display font-bold text-sm text-ink/65">{output.culture.refinedPosition}</p>
               </div>
             </motion.div>
 
-            {/* ── Phase 1: Cultural Intelligence — Mapping ── */}
-            <motion.div
-              ref={(el) => {
-                phaseRefs.current[1] = el;
-              }}
-              {...fade(1)}
-            >
-              <span className="eyebrow text-ink/50 mb-6 block">
-                01 — Mapping cultural intelligence
-              </span>
-              <div className="rounded-xl border border-ink/10 p-6 md:p-8">
-                <div className="grid md:grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                      Campaign type
-                    </div>
-                    <p className="font-display font-bold text-lg">
-                      {output.culture.campaignType}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                      Reference
-                    </div>
-                    <p className="text-sm text-ink/70">
-                      {output.culture.reference}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-3 gap-6 mb-6">
-                  <div>
-                    <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                      Tone
-                    </div>
-                    <p className="font-display font-bold text-base">
-                      {output.culture.tone}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                      Intent
-                    </div>
-                    <p className="font-display font-bold text-base">
-                      {output.culture.intent}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                      Constraint
-                    </div>
-                    <p className="text-sm text-ink/65 italic">
-                      {output.culture.constraint}
-                    </p>
-                  </div>
-                </div>
-                <div className="border-t border-ink/10 pt-5 grid md:grid-cols-2 gap-6">
-                  <div>
-                    <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                      Film / visual reference
-                    </div>
-                    <p className="text-sm text-ink/70">
-                      {output.culture.filmVisual}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                      Artist parallels
-                    </div>
-                    <p className="text-sm text-ink/70">
-                      {output.culture.artistParallels}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                      Audience clusters
-                    </div>
-                    <p className="text-sm text-ink/70">
-                      {output.culture.audienceClusters}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                      Creative direction
-                    </div>
-                    <p className="text-sm text-ink/70 font-medium">
-                      {output.culture.creativeDirection}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* ── Phase 2: Cultural Intelligence — Refinement ── */}
-            <motion.div
-              ref={(el) => {
-                phaseRefs.current[2] = el;
-              }}
-              {...fade(2)}
-            >
-              <span className="eyebrow text-ink/50 mb-6 block">
-                02 — Refining cultural alignment
-              </span>
-              <div className="rounded-xl bg-cream border border-ink/10 p-6 md:p-8">
-                <div className="grid md:grid-cols-2 gap-8 mb-6">
-                  <div>
-                    <div className="text-xs font-medium text-mint uppercase tracking-wider mb-3">
-                      Lean into
-                    </div>
-                    <div className="space-y-2">
-                      {output.culture.leanInto.map((item) => (
-                        <div
-                          key={item}
-                          className="text-sm text-ink/75 flex items-start gap-2"
-                        >
-                          <span className="text-mint shrink-0 mt-0.5">+</span>
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-signal uppercase tracking-wider mb-3">
-                      Avoid
-                    </div>
-                    <div className="space-y-2">
-                      {output.culture.avoid.map((item) => (
-                        <div
-                          key={item}
-                          className="text-sm text-ink/75 flex items-start gap-2"
-                        >
-                          <span className="text-signal shrink-0 mt-0.5">
-                            −
-                          </span>
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="border-t border-ink/15 pt-5">
-                  <div className="text-xs font-medium text-ink/40 uppercase tracking-wider mb-2">
-                    Refined position
-                  </div>
-                  <p className="text-base text-ink/80 font-display font-bold">
-                    {output.culture.refinedPosition}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* ── Phase 3: Signal Read ─────────────────── */}
-            <motion.div
-              ref={(el) => {
-                phaseRefs.current[3] = el;
-              }}
-              {...fade(3)}
-            >
-              <span className="eyebrow text-ink/50 mb-6 block">
-                03 — Reading signal against artist health + cultural context
-              </span>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Phase 3: Signal Read */}
+            <motion.div ref={(el) => { phaseRefs.current[3] = el; }} {...fade(3)}>
+              <span className="eyebrow text-ink/40 mb-4 block">03 — Signal read</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {output.signals.map((s) => (
-                  <div
-                    key={s.label}
-                    className="rounded-xl border border-ink/10 p-4"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span
-                        className={`w-2 h-2 rounded-full ${signalDot(s.strength)}`}
-                      />
-                      <span className="text-xs text-ink/45 uppercase tracking-wider">
-                        {s.label}
-                      </span>
+                  <div key={s.label} className="rounded-xl border border-ink/10 p-4">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${signalDot(s.strength)}`} />
+                      <span className="text-xs text-ink/40 uppercase tracking-wider">{s.label}</span>
                     </div>
-                    <div className="font-display font-bold text-xl">
-                      {s.value}
-                    </div>
-                    <div className="text-xs text-ink/40 mt-1 capitalize">
-                      {s.strength}
-                    </div>
+                    <div className="font-display font-bold text-2xl">{s.value}</div>
                   </div>
                 ))}
               </div>
             </motion.div>
 
-            {/* ── Phase 4: Tension ─────────────────────── */}
-            <motion.div
-              ref={(el) => {
-                phaseRefs.current[4] = el;
-              }}
-              {...fade(4)}
-            >
-              <span className="eyebrow text-ink/50 mb-6 block">
-                04 — System tension
-              </span>
-              <div className="rounded-xl bg-cream border border-ink/10 p-6 md:p-8">
-                <div className="space-y-4 mb-6">
-                  <p className="text-base md:text-lg text-ink/80">
-                    <span className="text-mint font-medium">Signal:</span>{" "}
-                    {output.tension.signal}
-                  </p>
-                  <p className="text-base md:text-lg text-ink/80">
-                    <span className="text-signal font-medium">Culture:</span>{" "}
-                    {output.tension.culture}
-                  </p>
-                  <p className="text-base md:text-lg text-ink/80">
-                    <span className="text-electric font-medium">Health:</span>{" "}
-                    {output.tension.health}
-                  </p>
+            {/* Phase 4: Tension */}
+            <motion.div ref={(el) => { phaseRefs.current[4] = el; }} {...fade(4)}>
+              <span className="eyebrow text-ink/40 mb-4 block">04 — Tension</span>
+              <div className="rounded-xl bg-cream border border-ink/8 p-5 md:p-6 space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="text-mint font-medium text-sm shrink-0 mt-0.5">Signal</span>
+                  <span className="text-sm text-ink/70">{output.tension.signal}</span>
                 </div>
-                <div className="border-t border-ink/15 pt-4">
-                  <p className="text-sm text-ink/65 flex items-start gap-2">
-                    <span className="text-electric mt-0.5 shrink-0">→</span>
-                    {output.tension.resolution}
-                  </p>
+                <div className="flex items-start gap-3">
+                  <span className="text-signal font-medium text-sm shrink-0 mt-0.5">Culture</span>
+                  <span className="text-sm text-ink/70">{output.tension.culture}</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-electric font-medium text-sm shrink-0 mt-0.5">Health</span>
+                  <span className="text-sm text-ink/70">{output.tension.health}</span>
+                </div>
+                <div className="border-t border-ink/10 pt-3 flex items-start gap-2">
+                  <span className="text-electric shrink-0">→</span>
+                  <span className="text-sm text-ink/80 font-medium">{output.tension.resolution}</span>
                 </div>
               </div>
             </motion.div>
 
-            {/* ── Phase 5: Decision ────────────────────── */}
-            <motion.div
-              ref={(el) => {
-                phaseRefs.current[5] = el;
-              }}
-              {...fade(5)}
-            >
-              <span className="eyebrow text-ink/50 mb-6 block">
-                05 — Decision
-              </span>
-              <div className="rounded-2xl bg-ink text-paper p-8 md:p-12">
-                <div className="flex flex-wrap items-end justify-between gap-6 mb-6">
-                  <div>
-                    <p className="text-paper/50 text-sm mb-2">
-                      {input.trackName}
-                      <span className="text-paper/30 mx-2">·</span>
-                      {input.artistStage}
-                      <span className="text-paper/30 mx-2">·</span>
-                      {formatBudget(budgetValue)}
-                    </p>
-                    <div className="font-display font-bold text-6xl md:text-8xl leading-none tracking-tight flex items-center gap-4">
-                      <span className={decisionColor(output.decision)}>→</span>
-                      <span>{output.decision}</span>
-                    </div>
+            {/* Phase 5: Decision */}
+            <motion.div ref={(el) => { phaseRefs.current[5] = el; }} {...fade(5)}>
+              <span className="eyebrow text-ink/40 mb-4 block">05 — Decision</span>
+              <div className="rounded-2xl bg-ink text-paper p-8 md:p-10">
+                <div className="flex flex-wrap items-end justify-between gap-6 mb-5">
+                  <div className="font-display font-bold text-6xl md:text-8xl leading-none tracking-tight flex items-center gap-4">
+                    <span className={decisionColor(output.decision)}>→</span>
+                    <span>{output.decision}</span>
                   </div>
                   <div className="flex gap-6">
                     <div>
-                      <div className="eyebrow text-paper/40 mb-1">
-                        Confidence
-                      </div>
-                      <div className="font-display font-bold text-3xl">
-                        {output.confidence}%
-                      </div>
+                      <div className="text-paper/35 text-xs uppercase tracking-wider mb-1">Confidence</div>
+                      <div className="font-display font-bold text-2xl">{output.confidence}%</div>
                     </div>
                     <div>
-                      <div className="eyebrow text-paper/40 mb-1">Risk</div>
-                      <div
-                        className={`font-display font-bold text-3xl ${
-                          output.risk === "Low"
-                            ? "text-mint"
-                            : output.risk === "Medium"
-                            ? "text-sun"
-                            : "text-signal"
-                        }`}
-                      >
-                        {output.risk}
-                      </div>
+                      <div className="text-paper/35 text-xs uppercase tracking-wider mb-1">Risk</div>
+                      <div className={`font-display font-bold text-2xl ${
+                        output.risk === "Low" ? "text-mint" : output.risk === "Medium" ? "text-sun" : "text-signal"
+                      }`}>{output.risk}</div>
                     </div>
                   </div>
                 </div>
-                <p className="text-paper/65 text-base leading-snug">
-                  {output.decisionReason}
-                </p>
-                <p className="text-paper/40 text-sm mt-4 italic">
-                  Artist health, cultural intelligence, and signal — all
-                  converge here.
-                </p>
+                <p className="text-paper/55 text-sm">{output.decisionLine}</p>
               </div>
             </motion.div>
 
-            {/* ── Phase 6: Capital Actions ─────────────── */}
-            <motion.div
-              ref={(el) => {
-                phaseRefs.current[6] = el;
-              }}
-              {...fade(6)}
-            >
-              <span className="eyebrow text-ink/50 mb-6 block">
-                06 — Capital deployment
-              </span>
-              <div className="space-y-3">
+            {/* Phase 6: Capital */}
+            <motion.div ref={(el) => { phaseRefs.current[6] = el; }} {...fade(6)}>
+              <span className="eyebrow text-ink/40 mb-4 block">06 — Capital</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {output.capitalActions.map((ca) => (
-                  <div
-                    key={ca.action}
-                    className="rounded-xl border border-ink/10 p-5 flex flex-wrap items-start justify-between gap-4"
-                  >
-                    <div className="flex-1 min-w-[200px]">
-                      <div className="font-display font-bold text-base mb-1">
-                        {ca.action}
-                      </div>
-                      <p className="text-sm text-ink/55">{ca.rationale}</p>
-                    </div>
-                    <div className="font-display font-bold text-lg text-ink/80">
-                      {ca.amount}
-                    </div>
+                  <div key={ca.action} className="rounded-xl border border-ink/10 p-4">
+                    <div className="font-display font-bold text-lg mb-0.5">{ca.amount}</div>
+                    <div className="text-sm font-medium text-ink/70 mb-1">{ca.action}</div>
+                    <div className="text-xs text-ink/40">{ca.rationale}</div>
                   </div>
                 ))}
               </div>
             </motion.div>
 
-            {/* ── Phase 7: Execution ───────────────────── */}
-            <motion.div
-              ref={(el) => {
-                phaseRefs.current[7] = el;
-              }}
-              {...fade(7)}
-            >
-              <span className="eyebrow text-ink/50 mb-6 block">
-                07 — Execution plan
-              </span>
-              <div className="rounded-xl border border-ink/10 p-6 md:p-8">
-                <div className="divide-y divide-ink/10">
-                  {output.execution.map((ex) => (
-                    <div
-                      key={ex.label}
-                      className="py-3.5 grid md:grid-cols-12 gap-2"
-                    >
-                      <div className="md:col-span-4 text-sm font-medium text-ink/50">
-                        {ex.label}
-                      </div>
-                      <div className="md:col-span-8 text-sm text-ink/75">
-                        {ex.detail}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {/* Phase 7: Execution */}
+            <motion.div ref={(el) => { phaseRefs.current[7] = el; }} {...fade(7)}>
+              <span className="eyebrow text-ink/40 mb-4 block">07 — Execution</span>
+              <div className="rounded-xl border border-ink/10 divide-y divide-ink/8">
+                {output.execution.map((ex) => (
+                  <div key={ex.label} className="px-5 py-3.5 flex items-start gap-4">
+                    <span className="text-sm font-medium text-ink/40 min-w-[5rem] shrink-0">{ex.label}</span>
+                    <span className="text-sm text-ink/70">{ex.detail}</span>
+                  </div>
+                ))}
               </div>
-
-              {/* System modules */}
-              <div className="mt-6">
-                <div className="eyebrow text-ink/40 mb-3">
-                  System modules activated
-                </div>
-                <div className="grid md:grid-cols-3 gap-3">
-                  <a
-                    href="/lens"
-                    className="group rounded-xl border border-ink/10 p-4 hover:border-ink/25 transition-colors flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="text-xs text-ink/40 mb-0.5">Signal</div>
-                      <div className="font-display font-bold text-sm">
-                        Artist & Track Lens
-                      </div>
-                    </div>
-                    <span className="text-ink/25 group-hover:text-signal transition-colors">
-                      →
-                    </span>
-                  </a>
-                  <a
-                    href="https://youtube-campaign-coach.vercel.app"
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="group rounded-xl border border-ink/10 p-4 hover:border-ink/25 transition-colors flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="text-xs text-ink/40 mb-0.5">Content</div>
-                      <div className="font-display font-bold text-sm">
-                        YouTube Campaign Coach
-                      </div>
-                    </div>
-                    <span className="text-ink/25 group-hover:text-signal transition-colors">
-                      ↗
-                    </span>
-                  </a>
-                  <a
-                    href="https://campaign-timeline-viewer.vercel.app"
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="group rounded-xl border border-ink/10 p-4 hover:border-ink/25 transition-colors flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="text-xs text-ink/40 mb-0.5">Timeline</div>
-                      <div className="font-display font-bold text-sm">
-                        Campaign Timeline
-                      </div>
-                    </div>
-                    <span className="text-ink/25 group-hover:text-signal transition-colors">
-                      ↗
-                    </span>
-                  </a>
-                </div>
+              {/* Modules */}
+              <div className="grid md:grid-cols-3 gap-3 mt-4">
+                <a href="/lens" className="group rounded-xl border border-ink/10 p-3.5 hover:border-ink/25 transition-colors flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-ink/35 mb-0.5">Signal</div>
+                    <div className="font-display font-bold text-sm">Artist & Track Lens</div>
+                  </div>
+                  <span className="text-ink/20 group-hover:text-signal transition-colors">→</span>
+                </a>
+                <a href="https://youtube-campaign-coach.vercel.app" target="_blank" rel="noreferrer noopener" className="group rounded-xl border border-ink/10 p-3.5 hover:border-ink/25 transition-colors flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-ink/35 mb-0.5">Content</div>
+                    <div className="font-display font-bold text-sm">YouTube Coach</div>
+                  </div>
+                  <span className="text-ink/20 group-hover:text-signal transition-colors">↗</span>
+                </a>
+                <a href="https://campaign-timeline-viewer.vercel.app" target="_blank" rel="noreferrer noopener" className="group rounded-xl border border-ink/10 p-3.5 hover:border-ink/25 transition-colors flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-ink/35 mb-0.5">Timeline</div>
+                    <div className="font-display font-bold text-sm">Campaign Timeline</div>
+                  </div>
+                  <span className="text-ink/20 group-hover:text-signal transition-colors">↗</span>
+                </a>
               </div>
             </motion.div>
 
-            {/* ── Phase 8: Live System Feed ────────────── */}
-            <motion.div
-              ref={(el) => {
-                phaseRefs.current[8] = el;
-              }}
-              {...fade(8)}
-            >
-              <span className="eyebrow text-ink/50 mb-6 block">
-                08 — Live system feed
-              </span>
-              <div className="rounded-xl border border-ink/10 p-6 md:p-8">
+            {/* Phase 8: Live Feed */}
+            <motion.div ref={(el) => { phaseRefs.current[8] = el; }} {...fade(8)}>
+              <span className="eyebrow text-ink/40 mb-4 block">08 — Live feed</span>
+              <div className="rounded-xl border border-ink/10 p-5 md:p-6">
                 <div className="space-y-0">
                   {output.liveFeed
                     .slice(0, step === "complete" ? output.liveFeed.length : feedIndex + 1)
                     .map((ev, i) => (
                       <motion.div
                         key={`${ev.time}-${i}`}
-                        initial={{ opacity: 0, x: -8 }}
+                        initial={{ opacity: 0, x: -6 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          duration: 0.4,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
-                        className="py-2.5 flex items-start gap-3 border-b border-ink/5 last:border-0"
+                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        className="py-2 flex items-center gap-3 border-b border-ink/5 last:border-0"
                       >
-                        <span className="text-xs text-ink/30 font-mono min-w-[3.5rem] pt-0.5">
-                          {ev.time}
-                        </span>
-                        <span className={`${feedColor(ev.type)} text-sm pt-0.5 shrink-0`}>
-                          {feedIcon(ev.type)}
-                        </span>
-                        <span
-                          className={`text-sm ${
-                            ev.type === "adjust"
-                              ? "text-ink/80 font-medium"
-                              : ev.type === "trigger"
-                              ? "text-ink/70"
-                              : "text-ink/55"
-                          }`}
-                        >
-                          {ev.message}
-                        </span>
+                        <span className="text-xs text-ink/25 font-mono min-w-[3rem]">{ev.time}</span>
+                        <span className={`${feedColor(ev.type)} text-xs shrink-0`}>{feedIcon(ev.type)}</span>
+                        <span className={`text-sm ${
+                          ev.type === "adjust" ? "text-ink/75 font-medium"
+                          : ev.type === "trigger" ? "text-ink/65"
+                          : "text-ink/45"
+                        }`}>{ev.message}</span>
                       </motion.div>
                     ))}
                 </div>
-
-                {/* Persistent system status */}
-                <div className="border-t border-ink/10 pt-5 mt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-mint animate-pulse" />
-                      <span className="text-sm text-ink/55 font-medium">
-                        System active
-                      </span>
-                    </div>
-                    <span className="text-xs text-ink/35 font-mono">
-                      Next evaluation in 48h
-                    </span>
+                <div className="border-t border-ink/10 pt-4 mt-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-mint animate-pulse" />
+                    <span className="text-sm text-ink/50 font-medium">System active</span>
                   </div>
-                  <p className="text-xs text-ink/35 mt-3 italic">
-                    The system doesn&apos;t stop at the decision. It monitors,
-                    interprets, and adjusts — continuously.
-                  </p>
+                  <span className="text-xs text-ink/30 font-mono">Next eval: 48h</span>
                 </div>
               </div>
             </motion.div>
 
-            {/* ── Persistent Agent Bar ─────────────────── */}
+            {/* ── Why This Works (expandable) ──────────── */}
+            {step === "complete" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
+                <button
+                  onClick={() => setWhyOpen((o) => !o)}
+                  className="flex items-center gap-2 text-sm text-ink/40 hover:text-ink/60 transition-colors mb-3"
+                >
+                  <span className="transition-transform" style={{ transform: whyOpen ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
+                  Why this works
+                </button>
+                <AnimatePresence>
+                  {whyOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="rounded-xl bg-cream border border-ink/8 p-5 space-y-3">
+                        <div>
+                          <div className="text-xs text-ink/40 uppercase tracking-wider mb-1">Cultural connection</div>
+                          <p className="text-sm text-ink/65">{output.why.connection}</p>
+                        </div>
+                        <div>
+                          <div className="text-xs text-ink/40 uppercase tracking-wider mb-1">Campaign direction</div>
+                          <p className="text-sm text-ink/65">{output.why.direction}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+
+            {/* ── Agent Bar ───────────────────────────── */}
             {step === "complete" && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
                 className="rounded-2xl bg-ink text-paper p-6 md:p-8"
               >
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
                     <span className="w-2.5 h-2.5 rounded-full bg-mint animate-pulse" />
-                    <span className="font-display font-bold text-lg">
-                      Campaign system is running
-                    </span>
+                    <span className="font-display font-bold text-base">System running</span>
                   </div>
-                  <span className="text-paper/40 text-xs font-mono">
-                    {input.trackName} · {input.artistStage} ·{" "}
-                    {formatBudget(budgetValue)}
+                  <span className="text-paper/35 text-xs font-mono">
+                    {input.trackName} · {input.artistStage} · {formatBudget(budgetValue)}
                   </span>
                 </div>
-                <div className="grid md:grid-cols-3 gap-4 mb-5">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <div className="text-paper/40 text-xs uppercase tracking-wider mb-1">
-                      Current signals
-                    </div>
-                    <div className="text-paper/75 text-sm font-medium flex items-center gap-2">
-                      <span
-                        className={directionColor(
-                          output.artistHealth.growthState.direction
-                        )}
-                      >
-                        {directionArrow(
-                          output.artistHealth.growthState.direction
-                        )}
+                    <div className="text-paper/35 text-xs uppercase tracking-wider mb-1">Signals</div>
+                    <div className="text-paper/70 text-sm font-medium flex items-center gap-1.5">
+                      <span className={directionColor(output.artistHealth.growthState.direction)}>
+                        {directionArrow(output.artistHealth.growthState.direction)}
                       </span>
-                      {output.artistHealth.growthState.direction === "rising"
-                        ? "Rising"
-                        : output.artistHealth.growthState.direction === "stable"
-                        ? "Stable"
-                        : "Declining"}
+                      {output.artistHealth.growthState.direction === "rising" ? "Rising" : output.artistHealth.growthState.direction === "stable" ? "Stable" : "Declining"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-paper/40 text-xs uppercase tracking-wider mb-1">
-                      Evaluation status
-                    </div>
-                    <div className="text-paper/75 text-sm font-medium">
-                      Awaiting first signal check
-                    </div>
+                    <div className="text-paper/35 text-xs uppercase tracking-wider mb-1">Status</div>
+                    <div className="text-paper/70 text-sm font-medium">Awaiting first eval</div>
                   </div>
                   <div>
-                    <div className="text-paper/40 text-xs uppercase tracking-wider mb-1">
-                      Triggered actions
-                    </div>
-                    <div className="text-paper/75 text-sm font-medium">
-                      None yet
-                    </div>
+                    <div className="text-paper/35 text-xs uppercase tracking-wider mb-1">Actions</div>
+                    <div className="text-paper/70 text-sm font-medium">None yet</div>
                   </div>
                 </div>
-                <p className="text-paper/35 text-xs border-t border-paper/10 pt-4">
-                  This system is always on. Artist health, cultural context, and
-                  signal are monitored continuously. The next evaluation will
-                  refine or override this decision.
-                </p>
               </motion.div>
             )}
 
-            {/* ── Reset ────────────────────────────────── */}
+            {/* Reset */}
             {step === "complete" && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.5 }}
-                className="pt-6 border-t border-ink/10"
+                className="pt-4 border-t border-ink/10"
               >
                 <button
                   onClick={handleReset}
                   className="group inline-flex items-center gap-2 rounded-full border border-ink/20 px-6 py-3 text-sm font-medium hover:bg-ink hover:text-paper transition-colors"
                 >
-                  <span className="group-hover:-translate-x-1 transition-transform">
-                    ←
-                  </span>
-                  Run another simulation
+                  <span className="group-hover:-translate-x-1 transition-transform">←</span>
+                  Run another
                 </button>
               </motion.div>
             )}
