@@ -892,54 +892,70 @@ function FragmentLens({ active, data }: { active: boolean; data: LensData }) {
 
 /* ─── YouTube Coach — execution layer ───────────────────── */
 
-interface YoutubeAction { format: string; detail: string; status: "queued" | "running" | "drafted" }
+type YoutubeStatus = "live" | "running" | "activated" | "ready" | "drafted" | "idle";
+interface YoutubeAction { title: string; detail: string; status: YoutubeStatus }
 
 function FragmentYouTube({ active, decision }: { active: boolean; decision: Decision }) {
   const color = decision === "PUSH" ? "#FF4A1C" : decision === "TEST" ? "#FFD24C" : "#2C25FF";
+
   const actions: YoutubeAction[] = decision === "PUSH"
     ? [
-        { format: "Shorts", detail: "hook-first cut · 0:14", status: "running" },
-        { format: "Canvas", detail: "loop · 15s vertical", status: "queued" },
-        { format: "Creator", detail: "brief · 12 shortlisted", status: "drafted" },
+        { title: "Official video",  detail: "scheduled drop",             status: "live" },
+        { title: "Shorts",          detail: "3 planned · hook-first cuts", status: "running" },
+        { title: "Creator collabs", detail: "12 shortlisted",             status: "activated" },
       ]
     : decision === "TEST"
     ? [
-        { format: "Shorts", detail: "A/B hook test · 2 cuts", status: "queued" },
-        { format: "Canvas", detail: "holding · pending signal", status: "queued" },
+        { title: "Shorts",          detail: "A/B hook test · 2 cuts", status: "running" },
+        { title: "Lyric video",     detail: "prepared",               status: "ready" },
+        { title: "Creator collabs", detail: "scouting",               status: "drafted" },
       ]
     : [
-        { format: "—", detail: "no execution queued", status: "queued" },
+        { title: "Rollout",         detail: "paused · awaiting signal", status: "idle" },
       ];
 
-  const statusColor = (s: YoutubeAction["status"]) =>
-    s === "running" ? color : s === "drafted" ? "#1FBE7A" : "#0E0E0E66";
+  const header = decision === "PUSH" ? "youtube coach · rollout live" : decision === "TEST" ? "youtube coach · rollout active" : "youtube coach · rollout paused";
+  const countLabel = decision === "HOLD" ? "idle" : `${actions.length} active`;
+
+  const outcome = decision === "PUSH" ? "subs ↑ · views ↑ · momentum building" : decision === "TEST" ? "early velocity increasing" : "awaiting signal";
+
+  const statusColor = (s: YoutubeStatus) => {
+    if (!active) return "#0E0E0E33";
+    if (s === "live" || s === "running") return color;
+    if (s === "activated" || s === "ready") return "#1FBE7A";
+    if (s === "drafted") return "#0E0E0E88";
+    return "#0E0E0E55";
+  };
 
   return (
     <div className="rounded-lg border border-ink/8 bg-paper p-3 w-full">
       <div className="flex items-center justify-between mb-2">
-        <span className="font-mono text-[10px] text-ink/40">youtube coach · content queue</span>
+        <span className="font-mono text-[10px] text-ink/40">{header}</span>
         <span className="font-mono text-[10px]" style={{ color: active ? color : "#0E0E0E44" }}>
-          {decision === "HOLD" ? "idle" : `${actions.length} queued`}
+          {countLabel}
         </span>
       </div>
       <div className="space-y-1.5">
         {actions.map((a, i) => (
           <div key={i} className="flex items-center gap-2.5">
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: active ? statusColor(a.status) : "#0E0E0E33" }}
-            >
-              {active && a.status === "running" && (
-                <span className="block w-1.5 h-1.5 rounded-full animate-ping" style={{ background: color, opacity: 0.5 }} />
+            <span className="relative flex w-1.5 h-1.5 shrink-0">
+              {active && (a.status === "live" || a.status === "running") && (
+                <span className="absolute inline-flex h-full w-full rounded-full animate-ping" style={{ background: color, opacity: 0.45 }} />
               )}
+              <span className="relative inline-flex rounded-full w-1.5 h-1.5" style={{ background: statusColor(a.status) }} />
             </span>
-            <span className="font-mono text-[10.5px] text-ink/65 w-[56px] shrink-0">{a.format}</span>
-            <span className="font-mono text-[10px] text-ink/35 flex-1 truncate">{a.detail}</span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.1em]" style={{ color: active ? statusColor(a.status) : "#0E0E0E33" }}>
+            <span className="font-mono text-[10.5px] flex-1 truncate">
+              <span className={active ? "text-ink/80" : "text-ink/40"}>{a.title}</span>
+              <span className="text-ink/35"> — {a.detail}</span>
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.1em] shrink-0" style={{ color: statusColor(a.status) }}>
               {a.status}
             </span>
           </div>
         ))}
+      </div>
+      <div className="mt-2 pt-2 border-t border-ink/5 font-mono text-[10px] text-ink/35">
+        {outcome}
       </div>
     </div>
   );
