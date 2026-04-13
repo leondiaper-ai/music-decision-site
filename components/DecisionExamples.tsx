@@ -6,38 +6,38 @@ const examples = [
   {
     tag: "TRACK STATUS",
     status: "TEST",
-    statusColor: "bg-sun text-ink",
+    statusColor: "bg-electric text-paper",
     summary: "Save rate strong. Reach weak.",
     metrics: [
       { k: "Save rate", v: "4.8%", tone: "text-mint" },
       { k: "Reach (7d)", v: "−18%", tone: "text-signal" },
       { k: "Skip rate", v: "32%", tone: "text-ink/70" },
     ],
-    recommendation: "Push content. Hold paid spend until reach recovers.",
+    recommendation: "Trial paid reach at low spend. Validate before scaling.",
   },
   {
     tag: "CAMPAIGN SIGNAL",
-    status: "UNEVEN",
-    statusColor: "bg-signal text-paper",
+    status: "PUSH",
+    statusColor: "bg-mint text-ink",
     summary: "Strong opening, weak follow-through.",
     metrics: [
       { k: "Day 1 peak", v: "1.2M", tone: "text-mint" },
       { k: "Day 3 drop", v: "−61%", tone: "text-signal" },
       { k: "Retention", v: "Low", tone: "text-signal" },
     ],
-    recommendation: "Tighten post-release cadence. Add day-4 and day-7 moments.",
+    recommendation: "Accelerate cadence. Add day-4 and day-7 moments.",
   },
   {
     tag: "ARTIST HEALTH",
-    status: "BUILDING",
-    statusColor: "bg-electric text-paper",
+    status: "HOLD",
+    statusColor: "bg-sun text-ink",
     summary: "Catalogue quiet. New release momentum positive.",
     metrics: [
       { k: "Monthly Δ", v: "+9%", tone: "text-mint" },
       { k: "Catalogue", v: "Flat", tone: "text-ink/70" },
       { k: "Top market", v: "MX", tone: "text-ink" },
     ],
-    recommendation: "Protect the release. Delay catalogue push by 2 weeks.",
+    recommendation: "Hold catalogue push. Protect the release for 2 weeks.",
   },
 ];
 
