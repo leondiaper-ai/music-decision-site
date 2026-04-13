@@ -48,17 +48,13 @@ export default function ToolCards() {
           <div>
             <span className="eyebrow text-ink/60">04 — The Tools</span>
             <h2 className="headline font-display text-5xl md:text-7xl mt-3 max-w-3xl">
-              Three tools.
+              The tools feeding
               <br />
-              <span className="italic font-light">One workflow.</span>
+              <span className="italic font-light">the system.</span>
             </h2>
-            <p className="text-ink/60 text-base md:text-lg leading-relaxed mt-5 max-w-2xl">
-              Three tools that turn messy data into a clear next step.
-            </p>
           </div>
           <p className="hidden md:block max-w-xs text-ink/70 text-sm leading-relaxed">
-            Each tool is live and usable. They share one philosophy — make the
-            next decision obvious.
+            Each tool is live. Each one is an input into the decision.
           </p>
         </div>
 
@@ -136,11 +132,8 @@ export default function ToolCards() {
           })}
         </div>
 
-        {/* Minimal usage footnote — no box, no emphasis */}
         <p className="mt-10 text-xs text-ink/35">
           Used weekly to guide artist, track and campaign decisions.
-          <span className="mx-2 text-ink/20">·</span>
-          Built as fast prototypes, refined into usable systems.
         </p>
       </div>
     </section>
