@@ -807,6 +807,122 @@ function FragmentSpend({ decision, active }: { decision: Decision; active: boole
   );
 }
 
+/* ─── Artist & Track Lens — reasoning context ───────────── */
+
+interface LensData {
+  artistLabel: string;
+  cohortMatch: number;        // 0-100
+  catalogueDepth: string;     // e.g. "4 releases · 18mo"
+  trackFingerprint: string;   // e.g. "uptempo · hook @ 0:14"
+  reasoning: string;          // the why
+}
+
+const AMBIENT_LENS: LensData = {
+  artistLabel: "ambient cohort",
+  cohortMatch: 74,
+  catalogueDepth: "mixed pool · rolling",
+  trackFingerprint: "genre-agnostic",
+  reasoning: "baseline catalogue intelligence",
+};
+
+function FragmentLens({ active, data }: { active: boolean; data: LensData }) {
+  return (
+    <div className="rounded-lg border border-ink/8 bg-paper p-3 w-full">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-mono text-[10px] text-ink/40">artist & track lens</span>
+        <span className={`font-mono text-[10px] ${active ? "text-ink/55" : "text-ink/25"}`}>
+          ◎ upstream
+        </span>
+      </div>
+      <div className="flex items-start gap-3">
+        <div className="shrink-0">
+          <svg viewBox="0 0 28 28" className="w-7 h-7">
+            <circle cx={14} cy={14} r={12} fill="none" stroke={active ? "#0E0E0E" : "#0E0E0E"} strokeOpacity={active ? 0.3 : 0.15} strokeWidth={1} />
+            <circle cx={14} cy={14} r={7}  fill="none" stroke={active ? "#0E0E0E" : "#0E0E0E"} strokeOpacity={active ? 0.55 : 0.2} strokeWidth={1} />
+            <circle cx={14} cy={14} r={2}  fill={active ? "#0E0E0E" : "#0E0E0E"} opacity={active ? 0.9 : 0.4}>
+              {active && <animate attributeName="r" values="1.8;2.6;1.8" dur="1.5s" repeatCount="indefinite" />}
+            </circle>
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-mono text-[11px] text-ink/70 font-medium truncate">{data.artistLabel}</div>
+          <div className="mt-1 flex items-center gap-2">
+            <div className="flex-1 h-[3px] bg-ink/6 rounded-full overflow-hidden">
+              <motion.div
+                animate={{ width: `${data.cohortMatch}%` }}
+                transition={{ duration: 0.7 }}
+                className="h-full bg-ink/55"
+              />
+            </div>
+            <span className="font-mono text-[10px] text-ink/45 shrink-0">{data.cohortMatch}% match</span>
+          </div>
+          <div className="mt-1.5 font-mono text-[10px] text-ink/35 leading-[1.4]">
+            {data.catalogueDepth} · {data.trackFingerprint}
+          </div>
+          <div className="mt-1 font-mono text-[10px] text-ink/45 italic leading-[1.4]">
+            <span className="text-ink/25">// </span>{data.reasoning}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── YouTube Coach — execution layer ───────────────────── */
+
+interface YoutubeAction { format: string; detail: string; status: "queued" | "running" | "drafted" }
+
+function FragmentYouTube({ active, decision }: { active: boolean; decision: Decision }) {
+  const color = decision === "PUSH" ? "#FF4A1C" : decision === "TEST" ? "#FFD24C" : "#2C25FF";
+  const actions: YoutubeAction[] = decision === "PUSH"
+    ? [
+        { format: "Shorts", detail: "hook-first cut · 0:14", status: "running" },
+        { format: "Canvas", detail: "loop · 15s vertical", status: "queued" },
+        { format: "Creator", detail: "brief · 12 shortlisted", status: "drafted" },
+      ]
+    : decision === "TEST"
+    ? [
+        { format: "Shorts", detail: "A/B hook test · 2 cuts", status: "queued" },
+        { format: "Canvas", detail: "holding · pending signal", status: "queued" },
+      ]
+    : [
+        { format: "—", detail: "no execution queued", status: "queued" },
+      ];
+
+  const statusColor = (s: YoutubeAction["status"]) =>
+    s === "running" ? color : s === "drafted" ? "#1FBE7A" : "#0E0E0E66";
+
+  return (
+    <div className="rounded-lg border border-ink/8 bg-paper p-3 w-full">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-mono text-[10px] text-ink/40">youtube coach · content queue</span>
+        <span className="font-mono text-[10px]" style={{ color: active ? color : "#0E0E0E44" }}>
+          {decision === "HOLD" ? "idle" : `${actions.length} queued`}
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        {actions.map((a, i) => (
+          <div key={i} className="flex items-center gap-2.5">
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ background: active ? statusColor(a.status) : "#0E0E0E33" }}
+            >
+              {active && a.status === "running" && (
+                <span className="block w-1.5 h-1.5 rounded-full animate-ping" style={{ background: color, opacity: 0.5 }} />
+              )}
+            </span>
+            <span className="font-mono text-[10.5px] text-ink/65 w-[56px] shrink-0">{a.format}</span>
+            <span className="font-mono text-[10px] text-ink/35 flex-1 truncate">{a.detail}</span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.1em]" style={{ color: active ? statusColor(a.status) : "#0E0E0E33" }}>
+              {a.status}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Scenarios ─────────────────────────────────────────── */
 
 interface Scenario {
@@ -815,6 +931,7 @@ interface Scenario {
   hint: string;
   likelyDecision: Decision;
   input: CampaignInput;
+  lens: LensData;
 }
 
 const SCENARIOS: Scenario[] = [
@@ -824,6 +941,13 @@ const SCENARIOS: Scenario[] = [
     hint: "culture says yes. signal says momentum. decide now.",
     likelyDecision: "PUSH",
     input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 },
+    lens: {
+      artistLabel: "Midnight Drive · breaking",
+      cohortMatch: 82,
+      catalogueDepth: "3 releases · 9mo",
+      trackFingerprint: "uptempo · hook @ 0:14",
+      reasoning: "cohort overlaps active scene · TikTok audience primed",
+    },
   },
   {
     situation: "A major release drops Friday.",
@@ -831,6 +955,13 @@ const SCENARIOS: Scenario[] = [
     hint: "known cohort. capital-heavy. deploy with conviction.",
     likelyDecision: "PUSH",
     input: { trackName: "Cathedral", artistStage: "established", budget: 70 },
+    lens: {
+      artistLabel: "Cathedral · established",
+      cohortMatch: 91,
+      catalogueDepth: "11 releases · 6yr",
+      trackFingerprint: "mid-tempo · chorus @ 0:42",
+      reasoning: "catalogue gravity + known cohort · deploy at scale",
+    },
   },
   {
     situation: "An emerging artist caught first traction.",
@@ -838,8 +969,42 @@ const SCENARIOS: Scenario[] = [
     hint: "signal is soft. test before you commit capital.",
     likelyDecision: "TEST",
     input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 },
+    lens: {
+      artistLabel: "Bedroom Floor · emerging",
+      cohortMatch: 58,
+      catalogueDepth: "1 release · 3mo",
+      trackFingerprint: "lo-fi · hook @ 0:28",
+      reasoning: "save curve promising · cohort unproven · test narrow",
+    },
   },
 ];
+
+/* ─── Contextual fragment visibility ─────────────────────── */
+
+type FragmentId = "lens" | "velocity" | "audience" | "spend" | "youtube";
+
+function selectFragments(mode: "ambient" | "evaluating" | "resolved", phase: Phase, decision: Decision): FragmentId[] {
+  if (mode === "resolved") {
+    if (decision === "HOLD") return ["lens", "spend"];
+    return ["lens", "spend", "youtube"];
+  }
+  if (mode === "evaluating") {
+    if (phase === "idle" || phase === "signal_fire") return ["lens"];
+    if (phase === "culture_fire") return ["lens", "velocity", "audience"];
+    if (phase === "converge") return ["velocity", "audience", "spend"];
+    if (phase === "decide" || phase === "downstream") {
+      return decision === "HOLD" ? ["audience", "spend"] : ["audience", "spend", "youtube"];
+    }
+    return ["lens", "velocity"];
+  }
+  // ambient — rotate by phase
+  if (phase === "idle" || phase === "signal_fire") return ["lens", "velocity"];
+  if (phase === "culture_fire") return ["velocity", "audience"];
+  if (phase === "converge") return ["velocity", "audience", "spend"];
+  if (phase === "decide") return ["audience", "spend", "youtube"];
+  if (phase === "downstream") return ["spend", "youtube"];
+  return ["lens", "velocity"];
+}
 
 /* ─── Confidence jitter / smoothing hook ────────────────── */
 
@@ -874,7 +1039,7 @@ export default function CampaignPage() {
   const [mode, setMode] = useState<PageMode>("ambient");
   const [output, setOutput] = useState<SystemOutput | null>(null);
   const [scenarioState, setScenarioState] = useState<LoopState | null>(null);
-  const [activeScenario, setActiveScenario] = useState<string | null>(null);
+  const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const loop = useSystemLoop();
 
   // Map state source: scenarioState during evaluating/resolved, otherwise ambient loop
@@ -888,7 +1053,7 @@ export default function CampaignPage() {
   const launch = useCallback((sc: Scenario) => {
     const out = generate(sc.input);
     setOutput(out);
-    setActiveScenario(sc.situation);
+    setActiveScenario(sc);
     setMode("evaluating");
 
     const dec = out.decision;
@@ -967,11 +1132,42 @@ export default function CampaignPage() {
             <LiveFeed feed={feed} decision={currentState.decision} />
           </div>
 
-          {/* Right — product UI fragments */}
+          {/* Right — product UI fragments, contextually selected */}
           <div className="grid grid-cols-1 gap-2.5">
-            <FragmentVelocity active={currentState.activeNodes.includes("signal") || isResolved} decision={currentState.decision} />
-            <FragmentAudience active={currentState.activeNodes.includes("culture") || currentState.phase === "converge" || currentState.phase === "decide" || isResolved} />
-            <FragmentSpend decision={currentState.decision} active={currentState.phase === "decide" || currentState.phase === "downstream" || isResolved} />
+            {(() => {
+              const visible = selectFragments(mode, currentState.phase, currentState.decision);
+              const lensData = activeScenario?.lens ?? AMBIENT_LENS;
+              const renderFragment = (id: FragmentId) => {
+                switch (id) {
+                  case "lens":
+                    return <FragmentLens active={isResolved || currentState.activeNodes.includes("lens") || currentState.phase === "idle" || currentState.phase === "signal_fire" || currentState.phase === "culture_fire"} data={lensData} />;
+                  case "velocity":
+                    return <FragmentVelocity active={currentState.activeNodes.includes("signal") || currentState.phase === "converge" || isResolved} decision={currentState.decision} />;
+                  case "audience":
+                    return <FragmentAudience active={currentState.activeNodes.includes("culture") || currentState.phase === "converge" || currentState.phase === "decide" || isResolved} />;
+                  case "spend":
+                    return <FragmentSpend decision={currentState.decision} active={currentState.phase === "decide" || currentState.phase === "downstream" || isResolved} />;
+                  case "youtube":
+                    return <FragmentYouTube active={isResolved || currentState.phase === "decide" || currentState.phase === "downstream"} decision={currentState.decision} />;
+                }
+              };
+              return (
+                <AnimatePresence initial={false}>
+                  {visible.map((id) => (
+                    <motion.div
+                      key={id}
+                      layout
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.35 }}
+                    >
+                      {renderFragment(id)}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              );
+            })()}
           </div>
         </div>
       </section>
@@ -1038,7 +1234,7 @@ export default function CampaignPage() {
                 className="max-w-[640px] mx-auto text-center py-3"
               >
                 <p className="font-mono text-[11px] text-ink/30 uppercase tracking-[0.14em]">processing</p>
-                <p className="mt-2 text-[14px] text-ink/60 italic">{activeScenario}</p>
+                <p className="mt-2 text-[14px] text-ink/60 italic">{activeScenario?.situation}</p>
                 <p className="mt-1 font-mono text-[10.5px] text-ink/30">
                   confidence converging · signals aligning · decision resolving
                 </p>
@@ -1056,7 +1252,7 @@ export default function CampaignPage() {
               >
                 <div className="text-center mb-5">
                   <p className="font-mono text-[10px] text-ink/30 uppercase tracking-[0.14em]">scenario resolved</p>
-                  <p className="mt-1 text-[13px] text-ink/55 italic">{activeScenario}</p>
+                  <p className="mt-1 text-[13px] text-ink/55 italic">{activeScenario?.situation}</p>
                 </div>
                 <p className="text-center font-mono text-[10.5px] text-ink/40 mb-6">
                   projected · {output.outcome}
