@@ -15,32 +15,26 @@ interface CampaignInput {
   budget: number;
 }
 
+interface Reasoning {
+  signal: string;
+  culture: string;
+  artist: string;
+}
+
 interface Moment {
   day: number;
   streams: number;
   saves: number;
   action: string;
-  reasoning: string;
   type: "decision" | "deploy" | "execute" | "monitor" | "adjust";
+  reasoning: Reasoning;
+  confidence?: number;
+  risk?: "Low" | "Medium" | "High";
   tool?: { label: string; href: string; external?: boolean };
-  expand?: { heading: string; lines: string[] };
-}
-
-interface ContextLine {
-  artist: string;
-  growth: string;
-  growthDir: "rising" | "stable" | "declining";
-  culture: string;
-  tone: string;
-  signal: string;
-  signalStrength: "strong" | "mixed" | "weak";
 }
 
 interface SystemOutput {
   decision: Decision;
-  confidence: number;
-  risk: "Low" | "Medium" | "High";
-  context: ContextLine;
   moments: Moment[];
 }
 
@@ -55,230 +49,150 @@ function generate(input: CampaignInput): SystemOutput {
   const isEm = input.artistStage === "emerging";
   const isEs = input.artistStage === "established";
 
-  const context: ContextLine = isEm
-    ? { artist: "12k monthly", growth: "Early traction", growthDir: "rising", culture: "Discovery", tone: "Lo-fi, raw", signal: "Save 3.2% · Reach −12% · Engagement high", signalStrength: "mixed" }
-    : isEs
-    ? { artist: "2.1M monthly", growth: "Plateau", growthDir: "stable", culture: "Scale", tone: "Cinematic", signal: "Save 5.1% · Reach +24% · Velocity high", signalStrength: "strong" }
-    : { artist: "340k monthly", growth: "Accelerating", growthDir: "rising", culture: "Momentum", tone: "Energetic, narrative", signal: "Save 4.1% · Reach +8% · Engagement high", signalStrength: "mixed" };
+  let decision: Decision;
+  if (isEs && budget > 15000) decision = "PUSH";
+  else if (isEm && budget < 5000) decision = "TEST";
+  else if (isEs) decision = "PUSH";
+  else if (budget > 20000) decision = "PUSH";
+  else if (isEm) decision = "TEST";
+  else decision = "HOLD";
 
-  let decision: Decision, confidence: number, risk: "Low" | "Medium" | "High";
-  if (isEs && budget > 15000) { decision = "PUSH"; confidence = 87; risk = "Low"; }
-  else if (isEm && budget < 5000) { decision = "TEST"; confidence = 72; risk = "Medium"; }
-  else if (isEs) { decision = "PUSH"; confidence = 78; risk = "Low"; }
-  else if (budget > 20000) { decision = "PUSH"; confidence = 81; risk = "Medium"; }
-  else if (isEm) { decision = "TEST"; confidence = 68; risk = "Medium"; }
-  else { decision = "HOLD"; confidence = 64; risk = "High"; }
+  const conf = decision === "PUSH" ? (isEs ? 87 : 81) : decision === "TEST" ? (isEm && budget < 5000 ? 72 : 68) : 64;
+  const risk: "Low" | "Medium" | "High" = decision === "PUSH" ? (isEs ? "Low" : "Medium") : decision === "TEST" ? "Medium" : "High";
 
   const base = isEs ? 45000 : isEm ? 800 : 8000;
   const sv = isEs ? 5.1 : isEm ? 3.2 : 4.1;
   const m = decision === "PUSH" ? 1.6 : decision === "TEST" ? 1.15 : 0.95;
 
+  const tone = isEm ? "lo-fi, raw" : isEs ? "cinematic" : "energetic, narrative";
+  const culture = isEm ? "discovery" : isEs ? "scale" : "momentum";
+  const growth = isEm ? "early traction" : isEs ? "plateau" : "accelerating";
+  const fans = isEm ? "12k" : isEs ? "2.1M" : "340k";
+
   const moments: Moment[] = [
-    /* Day 0 — launch + decision */
     {
       day: 0, streams: base, saves: sv, type: "decision",
-      action: decision === "PUSH"
-        ? `System decided PUSH — deploy ${fmt(budget)}`
-        : decision === "TEST"
-        ? `System decided TEST — validate before committing ${fmt(budget)}`
-        : `System decided HOLD — ${fmt(budget)} preserved`,
-      reasoning: `${context.signal}. Artist at ${context.growth.toLowerCase()} (${context.artist}). Cultural frame: ${context.culture.toLowerCase()}, ${context.tone.toLowerCase()}. Confidence ${confidence}%, risk ${risk.toLowerCase()}.`,
-      tool: { label: "Artist & Track Lens", href: "/lens" },
-      expand: {
-        heading: "Cultural context",
-        lines: isEm
-          ? ["Film: Grainy backstage, handheld, natural light", "Artist: Early PinkPantheress, Clairo bedroom era", "Audience: Taste-first listeners, micro-communities", "Constraint: Nothing over-polished. Protect the narrative."]
-          : isEs
-          ? ["Film: Widescreen cinematography, monument shots", "Artist: Peak Drake rollout, Beyoncé precision", "Audience: Mainstream crossover, cultural commentators", "Constraint: No cheap reach. Match the stature."]
-          : ["Film: Dynamic performance, split-screen, street energy", "Artist: Central Cee breakout, early Doja Cat", "Audience: Genre explorers, playlist curators", "Constraint: Every asset builds the story."],
+      action: decision === "PUSH" ? `PUSH — deploy ${fmt(budget)}` : decision === "TEST" ? `TEST — validate before committing ${fmt(budget)}` : `HOLD — ${fmt(budget)} preserved`,
+      confidence: conf, risk,
+      reasoning: {
+        signal: isEs ? `Save 5.1%, reach +24%, velocity high` : isEm ? `Save 3.2%, reach −12%, engagement high` : `Save 4.1%, reach +8%, engagement high`,
+        culture: `${culture} frame — ${tone} positioning`,
+        artist: `${fans} monthly, ${growth}`,
       },
+      tool: { label: "Artist & Track Lens", href: "/lens" },
     },
-
-    /* Day 1 — execution set */
     {
       day: 1, streams: Math.round(base * 1.15), saves: sv + 0.2, type: "execute",
       action: decision === "PUSH"
-        ? isEs
-          ? "System set execution — hero assets, editorial placements, simultaneous day-1 launch"
-          : isEm
-          ? "System set execution — raw content, authentic voices, organic-first"
+        ? isEs ? "System set execution — hero assets, editorial, simultaneous launch"
+          : isEm ? "System set execution — raw content, authentic voices, organic-first"
           : "System set execution — narrative assets, genre-adjacent creators, 7-day stagger"
-        : decision === "TEST"
-        ? `System set execution — ${context.tone.split(",")[0].toLowerCase()} test formats, micro-creators, organic-first`
-        : "System set execution — minimal output, research mode",
-      reasoning: `Execution shaped by ${context.culture.toLowerCase()} frame and ${context.growth.toLowerCase()} artist state.`,
-      tool: { label: "Campaign Timeline", href: "https://campaign-timeline-viewer.vercel.app", external: true },
-      expand: {
-        heading: "Execution detail",
-        lines: decision === "PUSH"
-          ? isEs ? ["Content: Hero assets, cinematic.", "Creators: Editorial + press.", "Timing: Simultaneous day-1."]
-            : isEm ? ["Content: Raw, unpolished.", "Creators: Authentic voices.", "Timing: Organic → paid 48hr."]
-            : ["Content: Narrative-driven.", "Creators: Genre-adjacent.", "Timing: 7-day stagger."]
-          : decision === "TEST"
-          ? ["Content: Test formats.", "Creators: Micro, aligned.", "Timing: Organic first."]
-          : ["Content: Minimal.", "Creators: Research only.", "Timing: No paid."],
+        : decision === "TEST" ? `System set execution — ${tone.split(",")[0]} test formats, micro-creators` : "System set execution — minimal output, research mode",
+      reasoning: {
+        signal: "Execution follows from signal read",
+        culture: `${culture} frame shapes content direction and creator strategy`,
+        artist: `${growth} state determines timing and scale`,
       },
+      tool: { label: "Campaign Timeline", href: "https://campaign-timeline-viewer.vercel.app", external: true },
     },
-
-    /* Day 3 — capital deployed */
     {
       day: 3, streams: Math.round(base * m * 0.9), saves: sv + (decision === "PUSH" ? 0.8 : 0.1), type: "deploy",
       action: decision === "PUSH"
-        ? `System deployed capital — ${fmt(Math.round(budget * 0.4))} paid reach, ${fmt(Math.round(budget * 0.35))} content, ${fmt(Math.round(budget * 0.25))} creators + reserve`
+        ? `System deployed capital — ${fmt(Math.round(budget * 0.4))} paid, ${fmt(Math.round(budget * 0.35))} content, ${fmt(Math.round(budget * 0.25))} creators + reserve`
         : decision === "TEST"
         ? `System deployed capital — ${fmt(Math.round(budget * 0.4))} content testing, ${fmt(Math.round(budget * 0.6))} held`
-        : "System held all capital — no deployment until signal justifies",
-      reasoning: decision === "PUSH"
-        ? "Signal confirms audience. Largest allocation to paid reach — extending momentum while it's real."
-        : decision === "TEST"
-        ? "Organic-first. Testing formats within cultural frame before scaling."
-        : "Insufficient evidence. Capital preserved.",
+        : "System held all capital — no deployment",
+      reasoning: {
+        signal: decision === "PUSH" ? "Signal confirms audience — extend momentum" : decision === "TEST" ? "Signal promising, not confirmed — test first" : "Insufficient signal",
+        culture: decision === "PUSH" ? `${tone} assets, voices matching ${culture} positioning` : `Organic validation within ${culture} frame`,
+        artist: decision === "PUSH" ? `${growth} supports aggressive deployment` : `${growth} requires caution`,
+      },
       tool: decision !== "HOLD" ? { label: "YouTube Coach", href: "https://youtube-campaign-coach.vercel.app", external: true } : undefined,
     },
-
-    /* Day 5 — early signal */
     {
       day: 5, streams: Math.round(base * m * 1.05), saves: sv + (decision === "PUSH" ? 1.3 : decision === "TEST" ? 0.3 : -0.1), type: "monitor",
-      action: decision === "PUSH"
-        ? `Monitoring — save rate climbing to ${(sv + 1.3).toFixed(1)}%, streams trending up`
-        : decision === "TEST"
-        ? "Monitoring — early organic response, engagement steady"
-        : "Monitoring — no significant organic traction",
-      reasoning: "System watching. No intervention required.",
+      action: decision === "PUSH" ? `Monitoring — saves climbing to ${(sv + 1.3).toFixed(1)}%, streams up` : decision === "TEST" ? "Monitoring — organic response steady" : "Monitoring — no organic traction",
+      reasoning: { signal: "Tracking against baseline", culture: "No intervention — observing", artist: "Health stable" },
     },
-
-    /* Day 7 — first eval */
     {
       day: 7, streams: Math.round(base * m * 1.15), saves: sv + (decision === "PUSH" ? 1.5 : decision === "TEST" ? 0.6 : -0.2), type: "monitor",
-      action: decision === "PUSH"
-        ? `System evaluated 7-day data — streams +${Math.round((m * 1.15 - 1) * 100)}%, saves at ${(sv + 1.5).toFixed(1)}%`
-        : decision === "TEST"
-        ? `System evaluated 7-day data — saves at ${(sv + 0.6).toFixed(1)}%, format response mixed`
-        : "System evaluated 7-day data — no breakthrough signal",
-      reasoning: "Cross-referencing against artist health baseline and cultural frame.",
+      action: decision === "PUSH" ? `System evaluated — streams +${Math.round((m * 1.15 - 1) * 100)}%, saves ${(sv + 1.5).toFixed(1)}%`
+        : decision === "TEST" ? `System evaluated — saves ${(sv + 0.6).toFixed(1)}%, mixed format response` : "System evaluated — no breakthrough",
+      reasoning: { signal: "7-day data cross-referenced", culture: `Performance within ${culture} frame`, artist: `Health baseline at ${growth}` },
       tool: { label: "Artist & Track Lens", href: "/lens" },
     },
-
-    /* Day 10 — midpoint */
     {
       day: 10, streams: Math.round(base * m * (decision === "PUSH" ? 1.4 : decision === "TEST" ? 1.1 : 0.85)), saves: sv + (decision === "PUSH" ? 1.8 : decision === "TEST" ? 0.8 : -0.5), type: "monitor",
-      action: decision === "PUSH"
-        ? "Monitoring — sustained momentum, no drop-off"
-        : decision === "TEST"
-        ? "Monitoring — save rate slowly climbing, narrative formats outperforming"
-        : "Monitoring — flat trajectory, system holding position",
-      reasoning: "System continues observing.",
+      action: decision === "PUSH" ? "Monitoring — sustained, no drop-off" : decision === "TEST" ? "Monitoring — saves climbing, narrative outperforming" : "Monitoring — flat, holding",
+      reasoning: { signal: "Trend continuing", culture: "Frame holding", artist: "No health change" },
     },
-
-    /* Day 14 — system adjusts */
     {
       day: 14, streams: Math.round(base * m * (decision === "PUSH" ? 1.65 : decision === "TEST" ? 1.2 : 0.75)), saves: sv + (decision === "PUSH" ? 2.1 : decision === "TEST" ? 1.0 : -0.7), type: "adjust",
-      action: decision === "PUSH"
-        ? `System adjusted — scaling paid support, reallocating ${fmt(Math.round(budget * 0.1))} reserve to reach`
-        : decision === "TEST"
-        ? `System adjusted — save rate crossed ${(sv + 1.0).toFixed(1)}%, preparing upgrade to PUSH`
-        : "System adjusted — extending hold, insufficient signal for activation",
-      reasoning: decision === "PUSH"
-        ? `Streams +${Math.round((m * 1.65 - 1) * 100)}%, saves ${(sv + 2.1).toFixed(1)}%. Momentum confirmed — deploying remaining capital.`
-        : decision === "TEST"
-        ? "Evidence now supports deployment. Cultural frame validated through testing."
-        : "No evidence of organic demand. Continuing research phase.",
+      action: decision === "PUSH" ? `System adjusted — reallocating ${fmt(Math.round(budget * 0.1))} reserve to paid` : decision === "TEST" ? `System adjusted — save rate crossed ${(sv + 1.0).toFixed(1)}%, upgrading to PUSH` : "System adjusted — extending hold",
+      reasoning: {
+        signal: decision === "PUSH" ? `Streams +${Math.round((m * 1.65 - 1) * 100)}%, saves ${(sv + 2.1).toFixed(1)}%` : decision === "TEST" ? "Threshold crossed — evidence supports deployment" : "No organic demand",
+        culture: decision === "PUSH" ? "Momentum confirmed in cultural frame" : decision === "TEST" ? "Cultural frame validated through testing" : "Frame requires stronger signal",
+        artist: decision === "PUSH" ? "Deploying remaining capital" : decision === "TEST" ? "Artist health supports upgrade" : "Continuing research",
+      },
     },
-
-    /* Day 21 */
     {
       day: 21, streams: Math.round(base * m * (decision === "PUSH" ? 1.9 : decision === "TEST" ? 1.35 : 0.7)), saves: sv + (decision === "PUSH" ? 2.3 : decision === "TEST" ? 1.2 : -0.8), type: "monitor",
-      action: decision === "PUSH"
-        ? `Monitoring — campaign sustaining at ${fmtK(Math.round(base * m * 1.9))} daily streams`
-        : decision === "TEST"
-        ? "Monitoring — post-upgrade ramp, paid activation in progress"
-        : "Monitoring — hold continues, watching for signal shift",
-      reasoning: "System active. Continuous evaluation.",
+      action: decision === "PUSH" ? `Monitoring — sustaining at ${fmtK(Math.round(base * m * 1.9))} daily` : decision === "TEST" ? "Monitoring — post-upgrade ramp" : "Monitoring — hold continues",
+      reasoning: { signal: "Continuous evaluation", culture: "Active", artist: "Stable" },
     },
-
-    /* Day 28 — review */
     {
       day: 28, streams: Math.round(base * m * (decision === "PUSH" ? 2.1 : decision === "TEST" ? 1.5 : 0.65)), saves: sv + (decision === "PUSH" ? 2.5 : decision === "TEST" ? 1.4 : -1.0), type: "monitor",
-      action: decision === "PUSH"
-        ? `28-day review — ${fmtK(Math.round(base * m * 2.1))} daily streams, saves at ${(sv + 2.5).toFixed(1)}%. Campaign successful.`
-        : decision === "TEST"
-        ? `28-day review — ${fmtK(Math.round(base * m * 1.5))} daily streams. Test validated, full campaign active.`
-        : `28-day review — ${fmtK(Math.round(base * m * 0.65))} daily streams. Hold maintained. System evaluating next cycle.`,
-      reasoning: "Full cycle complete. System begins next evaluation window.",
+      action: decision === "PUSH" ? `28-day — ${fmtK(Math.round(base * m * 2.1))} daily, saves ${(sv + 2.5).toFixed(1)}%`
+        : decision === "TEST" ? `28-day — ${fmtK(Math.round(base * m * 1.5))} daily, test validated`
+        : `28-day — ${fmtK(Math.round(base * m * 0.65))} daily, hold maintained`,
+      reasoning: { signal: "Full cycle complete", culture: "System begins next window", artist: "Health re-evaluated" },
     },
   ];
 
-  return { decision, confidence, risk, context, moments };
+  return { decision, moments };
 }
 
 /* ─── Helpers ───────────────────────────────────────────── */
 
 function decisionColor(d: Decision) { return d === "PUSH" ? "text-signal" : d === "TEST" ? "text-sun" : "text-electric"; }
-function dirArrow(d: "rising" | "stable" | "declining") { return d === "rising" ? "↑" : d === "stable" ? "→" : "↓"; }
-function dirColor(d: "rising" | "stable" | "declining") { return d === "rising" ? "text-mint" : d === "stable" ? "text-sun" : "text-signal"; }
-function dotFill(t: Moment["type"]) { return t === "decision" ? "bg-ink" : t === "deploy" ? "bg-mint" : t === "execute" ? "bg-electric" : t === "adjust" ? "bg-signal" : "bg-ink/20"; }
-function strengthDot(s: "strong" | "mixed" | "weak") { return s === "strong" ? "bg-mint" : s === "mixed" ? "bg-sun" : "bg-signal"; }
+function dotFill(t: Moment["type"]) { return t === "decision" ? "bg-ink" : t === "deploy" ? "bg-mint" : t === "execute" ? "bg-electric" : t === "adjust" ? "bg-signal" : "bg-ink/15"; }
 
-/* ─── SVG Graph ─────────────────────────────────────────── */
+/* ─── Graph ─────────────────────────────────────────────── */
 
-function TimelineGraph({ moments, activeIdx, onHover }: {
-  moments: Moment[];
-  activeIdx: number | null;
-  onHover: (i: number | null) => void;
-}) {
-  const W = 720, H = 220, PX = 40, PY = 24;
-  const maxS = Math.max(...moments.map((m) => m.streams)) * 1.12;
+function Graph({ moments, activeIdx, onHover }: { moments: Moment[]; activeIdx: number | null; onHover: (i: number | null) => void }) {
+  const W = 720, H = 180, PX = 36, PY = 20;
+  const maxS = Math.max(...moments.map((m) => m.streams)) * 1.1;
   const maxD = moments[moments.length - 1].day || 1;
-
   const px = (d: number) => PX + (d / maxD) * (W - PX * 2);
   const py = (s: number) => PY + (1 - s / maxS) * (H - PY * 2);
-
-  const pts = moments.map((m) => `${px(m.day)},${py(m.streams)}`).join(" ");
+  const pts = moments.map((mo) => `${px(mo.day)},${py(mo.streams)}`).join(" ");
   const area = `${px(0)},${py(0)} ${pts} ${px(moments[moments.length - 1].day)},${py(0)}`;
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet">
-      {/* grid */}
       {[0.25, 0.5, 0.75].map((f) => (
-        <line key={f} x1={PX} y1={py(maxS * f)} x2={W - PX} y2={py(maxS * f)} stroke="currentColor" className="text-ink/[0.04]" strokeWidth={0.5} />
+        <line key={f} x1={PX} y1={py(maxS * f)} x2={W - PX} y2={py(maxS * f)} stroke="currentColor" className="text-ink/[0.03]" strokeWidth={0.5} />
       ))}
-
-      {/* area */}
-      <polygon points={area} className="fill-ink/[0.025]" />
-
-      {/* line */}
-      <polyline points={pts} fill="none" stroke="currentColor" className="text-ink/20" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
-
-      {/* points */}
-      {moments.map((m, i) => {
-        const isActive = activeIdx === i;
-        const cx = px(m.day), cy = py(m.streams);
-
+      <polygon points={area} className="fill-ink/[0.02]" />
+      <polyline points={pts} fill="none" stroke="currentColor" className="text-ink/15" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      {moments.map((mo, i) => {
+        const isA = activeIdx === i;
+        const cx = px(mo.day), cy = py(mo.streams);
         return (
           <g key={i} onMouseEnter={() => onHover(i)} onMouseLeave={() => onHover(null)} className="cursor-pointer">
             <circle cx={cx} cy={cy} r={14} fill="transparent" />
-            <circle cx={cx} cy={cy} r={isActive ? 5 : 3.5}
-              className={`transition-all duration-150 ${
-                isActive ? "fill-signal" : m.type === "decision" ? "fill-ink" : m.type === "deploy" ? "fill-mint" : m.type === "adjust" ? "fill-signal/70" : "fill-ink/20"
-              }`} />
-
-            {isActive && (
+            <circle cx={cx} cy={cy} r={isA ? 4.5 : mo.type === "monitor" ? 2 : 3}
+              className={`transition-all duration-150 ${isA ? "fill-signal" : mo.type === "decision" ? "fill-ink" : mo.type === "deploy" ? "fill-mint" : mo.type === "adjust" ? "fill-signal/60" : "fill-ink/12"}`} />
+            {isA && (
               <>
-                <line x1={cx} y1={cy + 7} x2={cx} y2={H - PY} stroke="currentColor" className="text-signal/15" strokeWidth={0.5} strokeDasharray="2,2" />
-                <text x={cx} y={cy - 14} textAnchor="middle" className="text-[9px] font-mono fill-ink/55">{fmtK(m.streams)} streams · {m.saves.toFixed(1)}% save</text>
-                <text x={cx} y={H - PY + 14} textAnchor="middle" className="text-[8px] font-mono fill-ink/30">Day {m.day}</text>
+                <line x1={cx} y1={cy + 6} x2={cx} y2={H - PY} stroke="currentColor" className="text-signal/12" strokeWidth={0.5} strokeDasharray="2,2" />
+                <text x={cx} y={cy - 12} textAnchor="middle" className="text-[9px] font-mono fill-ink/50">{fmtK(mo.streams)} · {mo.saves.toFixed(1)}%</text>
+                <text x={cx} y={H - PY + 12} textAnchor="middle" className="text-[7px] font-mono fill-ink/25">Day {mo.day}</text>
               </>
-            )}
-
-            {!isActive && (m.type === "decision" || m.type === "adjust") && (
-              <text x={cx} y={H - PY + 14} textAnchor="middle" className="text-[7px] font-mono fill-ink/15">D{m.day}</text>
             )}
           </g>
         );
       })}
-
-      {/* axis */}
-      <line x1={PX} y1={H - PY} x2={W - PX} y2={H - PY} stroke="currentColor" className="text-ink/6" strokeWidth={0.5} />
     </svg>
   );
 }
@@ -286,50 +200,37 @@ function TimelineGraph({ moments, activeIdx, onHover }: {
 /* ─── Boot ──────────────────────────────────────────────── */
 
 const BOOT = ["Initialising…", "Loading baseline…", "Mapping culture…", "Reading signal…", "Running."];
-const BOOT_DELAY = 480;
-
-/* ─── Page ──────────────────────────────────────────────── */
 
 /* ─── Scenarios ─────────────────────────────────────────── */
 
-interface Scenario {
-  label: string;
-  sub: string;
-  input: CampaignInput;
-}
-
-const SCENARIOS: Scenario[] = [
-  { label: "Breaking artist — momentum moment", sub: "340k monthly, accelerating growth, $15k budget", input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 } },
-  { label: "Established artist — major release", sub: "2.1M monthly, plateau, $35k budget", input: { trackName: "Cathedral", artistStage: "established", budget: 70 } },
-  { label: "Emerging artist — first traction", sub: "12k monthly, early traction, $3k budget", input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 } },
+const SCENARIOS: { label: string; sub: string; input: CampaignInput }[] = [
+  { label: "Breaking artist — momentum moment", sub: "340k monthly, accelerating, $15k", input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 } },
+  { label: "Established artist — major release", sub: "2.1M monthly, plateau, $35k", input: { trackName: "Cathedral", artistStage: "established", budget: 70 } },
+  { label: "Emerging artist — first traction", sub: "12k monthly, early traction, $3k", input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 } },
 ];
 
 /* ─── Page ──────────────────────────────────────────────── */
 
 export default function CampaignPage() {
   const [step, setStep] = useState<"input" | "boot" | "run" | "done">("input");
-  const [activeInput, setActiveInput] = useState<CampaignInput | null>(null);
   const [output, setOutput] = useState<SystemOutput | null>(null);
   const [bootIdx, setBootIdx] = useState(0);
   const [evIdx, setEvIdx] = useState(0);
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const [openReasoning, setOpenReasoning] = useState<Record<number, boolean>>({});
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [showCustom, setShowCustom] = useState(false);
   const [customInput, setCustomInput] = useState<CampaignInput>({ trackName: "", artistStage: "breaking", budget: 30 });
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  const customBudgetVal = BUDGET_MAP(customInput.budget);
-
   const launch = useCallback((inp: CampaignInput) => {
-    setActiveInput(inp);
     setOutput(generate(inp));
     setStep("boot");
-    setBootIdx(0); setEvIdx(0); setExpanded({}); setActiveIdx(null); setShowCustom(false);
+    setBootIdx(0); setEvIdx(0); setOpenReasoning({}); setActiveIdx(null); setShowCustom(false);
   }, []);
 
   useEffect(() => {
     if (step !== "boot") return;
-    if (bootIdx < BOOT.length - 1) { const t = setTimeout(() => setBootIdx((b) => b + 1), BOOT_DELAY); return () => clearTimeout(t); }
+    if (bootIdx < BOOT.length - 1) { const t = setTimeout(() => setBootIdx((b) => b + 1), 480); return () => clearTimeout(t); }
     else { const t = setTimeout(() => { setStep("run"); setEvIdx(0); }, 280); return () => clearTimeout(t); }
   }, [step, bootIdx]);
 
@@ -345,15 +246,14 @@ export default function CampaignPage() {
     }
   }, [step, evIdx]);
 
-  const reset = useCallback(() => { setStep("input"); setOutput(null); setActiveInput(null); setBootIdx(0); setEvIdx(0); setExpanded({}); setActiveIdx(null); }, []);
-  const toggle = (i: number) => setExpanded((e) => ({ ...e, [i]: !e[i] }));
-
-  const visMoments = output ? output.moments.slice(0, step === "done" ? output.moments.length : evIdx + 1) : [];
+  const reset = useCallback(() => { setStep("input"); setOutput(null); setBootIdx(0); setEvIdx(0); setOpenReasoning({}); setActiveIdx(null); }, []);
+  const toggleR = (i: number) => setOpenReasoning((r) => ({ ...r, [i]: !r[i] }));
+  const vis = output ? output.moments.slice(0, step === "done" ? output.moments.length : evIdx + 1) : [];
 
   return (
     <main className="min-h-screen bg-paper">
       <header className="sticky top-0 z-40 backdrop-blur-md bg-paper/70 border-b border-ink/5">
-        <div className="mx-auto max-w-[1120px] px-6 md:px-10 h-14 flex items-center justify-between">
+        <div className="mx-auto max-w-[960px] px-6 md:px-10 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-display font-bold tracking-tightest text-lg">
             <span className="w-2.5 h-2.5 rounded-full bg-signal" />decision/system_
           </Link>
@@ -362,67 +262,54 @@ export default function CampaignPage() {
       </header>
 
       <section className="bg-ink text-paper py-10 md:py-12">
-        <div className="mx-auto max-w-[1120px] px-6 md:px-10">
+        <div className="mx-auto max-w-[960px] px-6 md:px-10">
           <h1 className="font-display text-3xl md:text-5xl leading-[0.95] font-bold">
             AI runs <span className="italic font-light text-signal">the campaign.</span>
           </h1>
-          <p className="mt-3 text-sm text-paper/35 max-w-sm">Decision → content → spend → optimisation. Continuously.</p>
+          <p className="mt-3 text-sm text-paper/30 max-w-sm">Decision → content → spend → optimisation. Continuously.</p>
         </div>
       </section>
 
-      <div className="mx-auto max-w-[1120px] px-6 md:px-10 py-10 md:py-14">
+      <div className="mx-auto max-w-[960px] px-6 md:px-10 py-10 md:py-14">
         <AnimatePresence mode="wait">
+          {/* Scenarios */}
           {step === "input" && (
             <motion.div key="input" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.4 }} className="max-w-2xl">
-              <p className="text-sm text-ink/45 mb-6">Pick a campaign. Watch the system run.</p>
-
+              <p className="text-sm text-ink/40 mb-6">Pick a campaign. Watch the system run.</p>
               <div className="grid gap-3 mb-8">
                 {SCENARIOS.map((sc) => (
-                  <button
-                    key={sc.label}
-                    onClick={() => launch(sc.input)}
-                    className="group w-full text-left rounded-xl border border-ink/12 hover:border-ink/25 px-5 py-4 transition-colors flex items-center justify-between gap-4"
-                  >
+                  <button key={sc.label} onClick={() => launch(sc.input)} className="group w-full text-left rounded-xl border border-ink/10 hover:border-ink/25 px-5 py-4 transition-colors flex items-center justify-between gap-4">
                     <div>
-                      <div className="text-sm font-medium text-ink/75 group-hover:text-ink transition-colors">{sc.label}</div>
-                      <div className="text-xs text-ink/35 mt-0.5">{sc.sub}</div>
+                      <div className="text-sm font-medium text-ink/70 group-hover:text-ink transition-colors">{sc.label}</div>
+                      <div className="text-xs text-ink/30 mt-0.5">{sc.sub}</div>
                     </div>
-                    <span className="text-ink/15 group-hover:text-signal transition-colors text-sm">→</span>
+                    <span className="text-ink/12 group-hover:text-signal transition-colors text-sm">→</span>
                   </button>
                 ))}
               </div>
-
-              {/* Custom setup — de-prioritised */}
-              <div className="border-t border-ink/8 pt-5">
-                <button onClick={() => setShowCustom((s) => !s)} className="text-xs text-ink/25 hover:text-ink/45 transition-colors">
-                  <span className="inline-block transition-transform mr-1" style={{ transform: showCustom ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
-                  Custom setup
+              <div className="border-t border-ink/6 pt-4">
+                <button onClick={() => setShowCustom((s) => !s)} className="text-xs text-ink/20 hover:text-ink/40 transition-colors">
+                  <span className="inline-block transition-transform mr-1" style={{ transform: showCustom ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>Custom setup
                 </button>
                 <AnimatePresence>
                   {showCustom && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                      <div className="pt-4 max-w-md space-y-5">
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                      <div className="pt-4 max-w-md space-y-4">
                         <div>
-                          <label className="block text-xs font-medium text-ink/40 mb-1.5">Track name</label>
-                          <input type="text" value={customInput.trackName} onChange={(e) => setCustomInput((p) => ({ ...p, trackName: e.target.value }))} placeholder="e.g. Midnight Drive" className="w-full rounded-lg border border-ink/12 bg-cream px-4 py-2.5 text-sm text-ink placeholder:text-ink/20 focus:outline-none focus:border-ink/30 transition-colors" />
+                          <label className="block text-xs text-ink/35 mb-1">Track</label>
+                          <input type="text" value={customInput.trackName} onChange={(e) => setCustomInput((p) => ({ ...p, trackName: e.target.value }))} placeholder="e.g. Midnight Drive" className="w-full rounded-lg border border-ink/10 bg-cream px-3.5 py-2 text-sm text-ink placeholder:text-ink/20 focus:outline-none focus:border-ink/25 transition-colors" />
                         </div>
-                        <div>
-                          <label className="block text-xs font-medium text-ink/40 mb-1.5">Artist stage</label>
-                          <div className="flex gap-2">
-                            {([["emerging","Emerging"],["breaking","Breaking"],["established","Established"]] as [ArtistStage,string][]).map(([v,l]) => (
-                              <button key={v} onClick={() => setCustomInput((p) => ({ ...p, artistStage: v }))} className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${customInput.artistStage === v ? "bg-ink text-paper border-ink" : "border-ink/12 text-ink/50 hover:border-ink/25"}`}>{l}</button>
-                            ))}
-                          </div>
+                        <div className="flex gap-2">
+                          {([["emerging","Emerging"],["breaking","Breaking"],["established","Established"]] as [ArtistStage,string][]).map(([v,l]) => (
+                            <button key={v} onClick={() => setCustomInput((p) => ({ ...p, artistStage: v }))} className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${customInput.artistStage === v ? "bg-ink text-paper border-ink" : "border-ink/10 text-ink/45 hover:border-ink/20"}`}>{l}</button>
+                          ))}
                         </div>
-                        <div>
-                          <label className="block text-xs font-medium text-ink/40 mb-1.5">Budget</label>
-                          <div className="flex items-center gap-3">
-                            <input type="range" min={0} max={100} value={customInput.budget} onChange={(e) => setCustomInput((p) => ({ ...p, budget: Number(e.target.value) }))} className="flex-1 h-1.5 rounded-full appearance-none bg-ink/8 accent-ink cursor-pointer" />
-                            <span className="font-display font-bold text-sm min-w-[4rem] text-right">{fmt(customBudgetVal)}</span>
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <input type="range" min={0} max={100} value={customInput.budget} onChange={(e) => setCustomInput((p) => ({ ...p, budget: Number(e.target.value) }))} className="flex-1 h-1.5 rounded-full appearance-none bg-ink/6 accent-ink cursor-pointer" />
+                          <span className="font-display font-bold text-sm min-w-[4rem] text-right">{fmt(BUDGET_MAP(customInput.budget))}</span>
                         </div>
-                        <button onClick={() => { if (customInput.trackName.trim()) launch(customInput); }} disabled={!customInput.trackName.trim()} className="group inline-flex items-center gap-2 rounded-full bg-ink text-paper px-5 py-2.5 text-xs font-medium hover:bg-signal transition-colors disabled:opacity-20 disabled:cursor-not-allowed">
-                          Run System <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                        <button onClick={() => { if (customInput.trackName.trim()) launch(customInput); }} disabled={!customInput.trackName.trim()} className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper px-4 py-2 text-xs font-medium hover:bg-signal transition-colors disabled:opacity-20 disabled:cursor-not-allowed">
+                          Run <span>→</span>
                         </button>
                       </div>
                     </motion.div>
@@ -432,61 +319,37 @@ export default function CampaignPage() {
             </motion.div>
           )}
 
+          {/* Boot */}
           {step === "boot" && (
-            <motion.div key="boot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="max-w-sm py-14">
+            <motion.div key="boot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="max-w-xs py-14">
               {BOOT.map((line, i) => (
-                <motion.div key={line} initial={{ opacity: 0, x: -5 }} animate={bootIdx >= i ? { opacity: i === bootIdx ? 1 : 0.2, x: 0 } : { opacity: 0, x: -5 }} transition={{ duration: 0.2 }} className="font-mono text-sm mb-2">
-                  <span className="text-ink/20 mr-2">{bootIdx > i ? "✓" : bootIdx === i ? "›" : " "}</span>
-                  <span className={bootIdx === i ? "text-ink" : "text-ink/25"}>{line}</span>
+                <motion.div key={line} initial={{ opacity: 0, x: -5 }} animate={bootIdx >= i ? { opacity: i === bootIdx ? 1 : 0.15, x: 0 } : { opacity: 0, x: -5 }} transition={{ duration: 0.2 }} className="font-mono text-sm mb-2">
+                  <span className="text-ink/15 mr-2">{bootIdx > i ? "✓" : bootIdx === i ? "›" : " "}</span>
+                  <span className={bootIdx === i ? "text-ink" : "text-ink/20"}>{line}</span>
                 </motion.div>
               ))}
-              <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (bootIdx + 1) / BOOT.length }} transition={{ duration: 0.25 }} className="h-px bg-ink/15 mt-5 origin-left" />
+              <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (bootIdx + 1) / BOOT.length }} transition={{ duration: 0.25 }} className="h-px bg-ink/12 mt-5 origin-left" />
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ── UNIFIED TIMELINE ────────────────────────── */}
+        {/* ── THE TIMELINE ────────────────────────────── */}
         {(step === "run" || step === "done") && output && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
 
-            {/* Context line */}
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mb-6 text-xs text-ink/35">
-              <span className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${strengthDot(output.context.signalStrength)}`} />
-                <span className="uppercase tracking-wider font-medium text-ink/45">{output.context.artist}</span>
-                <span className={`${dirColor(output.context.growthDir)} font-medium`}>{dirArrow(output.context.growthDir)} {output.context.growth}</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-electric/40" />
-                <span>{output.context.culture} · {output.context.tone}</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${strengthDot(output.context.signalStrength)}`} />
-                <span>{output.context.signal}</span>
-              </span>
+            {/* Graph — no border, no label, just the curve */}
+            <div className="mb-6">
+              <Graph moments={output.moments} activeIdx={activeIdx} onHover={setActiveIdx} />
             </div>
 
-            {/* Graph */}
-            <div className="rounded-xl border border-ink/8 p-4 md:p-5 mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-ink/35 uppercase tracking-wider font-medium">Campaign Performance</span>
-                <span className="text-xs text-ink/20 font-mono">28 days</span>
-              </div>
-              <TimelineGraph
-                moments={output.moments}
-                activeIdx={activeIdx}
-                onHover={setActiveIdx}
-              />
-            </div>
-
-            {/* Moments */}
+            {/* Timeline */}
             <div className="relative ml-1">
-              <div className="absolute left-[3px] top-0 bottom-0 w-px bg-ink/8" />
+              <div className="absolute left-[3px] top-0 bottom-0 w-px bg-ink/6" />
 
-              {visMoments.map((mo, i) => {
+              {vis.map((mo, i) => {
                 const isDecision = mo.type === "decision";
-                const isOpen = !!expanded[i];
-                const isActive = activeIdx === i;
+                const isA = activeIdx === i;
+                const rOpen = !!openReasoning[i];
 
                 return (
                   <motion.div
@@ -494,105 +357,102 @@ export default function CampaignPage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                    className={`relative pl-7 pb-0.5 transition-colors duration-100 ${isActive ? "bg-ink/[0.02] -mx-2 px-9 rounded-lg" : ""}`}
+                    className={`relative pl-7 pb-0.5 transition-colors duration-100 ${isA ? "bg-ink/[0.015] -mx-2 px-9 rounded-lg" : ""}`}
                     onMouseEnter={() => setActiveIdx(i)}
                     onMouseLeave={() => setActiveIdx(null)}
                   >
-                    <span className={`absolute left-0 top-[1rem] w-[7px] h-[7px] rounded-full ${dotFill(mo.type)} ${mo.type === "adjust" ? "animate-pulse" : ""}`} />
+                    <span className={`absolute left-0 top-[0.9rem] w-[7px] h-[7px] rounded-full ${dotFill(mo.type)} ${mo.type === "adjust" ? "animate-pulse" : ""}`} />
 
-                    {/* Day marker */}
-                    {(i === 0 || mo.day !== visMoments[i - 1].day) && (
-                      <div className="text-[11px] font-mono text-ink/20 mb-0.5">Day {mo.day}</div>
+                    {(i === 0 || mo.day !== vis[i - 1].day) && (
+                      <div className="text-[10px] font-mono text-ink/18 mb-0.5">Day {mo.day}</div>
                     )}
 
                     {isDecision ? (
-                      <div className="rounded-xl bg-ink text-paper p-5 mb-3">
+                      /* Decision — the only dark card in the entire UI */
+                      <div className="rounded-xl bg-ink text-paper p-5 mb-2">
                         <div className="flex flex-wrap items-end justify-between gap-3 mb-2">
-                          <div className="font-display font-bold text-3xl md:text-4xl leading-none flex items-center gap-2.5">
+                          <div className="font-display font-bold text-3xl md:text-4xl leading-none flex items-center gap-2">
                             <span className={decisionColor(output.decision)}>→</span>{output.decision}
                           </div>
-                          <div className="flex gap-4 text-sm">
-                            <span><span className="text-paper/25 text-xs uppercase tracking-wider">Conf </span><span className="font-display font-bold">{output.confidence}%</span></span>
-                            <span><span className="text-paper/25 text-xs uppercase tracking-wider">Risk </span><span className={`font-display font-bold ${output.risk === "Low" ? "text-mint" : output.risk === "Medium" ? "text-sun" : "text-signal"}`}>{output.risk}</span></span>
-                          </div>
+                          {mo.confidence && mo.risk && (
+                            <div className="flex gap-4 text-xs">
+                              <span className="text-paper/25">{mo.confidence}% conf</span>
+                              <span className={mo.risk === "Low" ? "text-mint" : mo.risk === "Medium" ? "text-sun" : "text-signal"}>{mo.risk} risk</span>
+                            </div>
+                          )}
                         </div>
                         <p className="text-paper/45 text-sm">{mo.action}</p>
-                        <p className="text-paper/25 text-xs mt-1">{mo.reasoning}</p>
+
+                        {/* Reasoning — collapsed */}
+                        <button onClick={() => toggleR(i)} className="mt-2 text-xs text-paper/18 hover:text-paper/35 transition-colors">
+                          <span className="inline-block transition-transform mr-0.5" style={{ transform: rOpen ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
+                          {rOpen ? "Less" : "Why"}
+                        </button>
+                        <AnimatePresence>
+                          {rOpen && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                              <div className="mt-1.5 pl-2 border-l border-paper/10 space-y-1 text-xs text-paper/25">
+                                <p><span className="text-mint">Signal</span> {mo.reasoning.signal}</p>
+                                <p><span className="text-electric">Culture</span> {mo.reasoning.culture}</p>
+                                <p><span className="text-sun">Artist</span> {mo.reasoning.artist}</p>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
                         {mo.tool && (
-                          <a href={mo.tool.href} target={mo.tool.external ? "_blank" : undefined} rel={mo.tool.external ? "noreferrer noopener" : undefined} className="inline-flex items-center gap-1 mt-2 text-xs text-paper/20 hover:text-signal transition-colors">
-                            <span className="w-1 h-1 rounded-full bg-paper/10" />{mo.tool.label} <span>{mo.tool.external ? "↗" : "→"}</span>
+                          <a href={mo.tool.href} target={mo.tool.external ? "_blank" : undefined} rel={mo.tool.external ? "noreferrer noopener" : undefined} className="inline-flex items-center gap-1 mt-2 text-xs text-paper/15 hover:text-signal transition-colors">
+                            <span className="w-1 h-1 rounded-full bg-paper/8" />{mo.tool.label} {mo.tool.external ? "↗" : "→"}
                           </a>
-                        )}
-                        {mo.expand && (
-                          <>
-                            <button onClick={() => toggle(i)} className="block mt-2 text-xs text-paper/15 hover:text-paper/35 transition-colors">
-                              <span className="inline-block transition-transform mr-0.5" style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
-                              {isOpen ? "Less" : mo.expand.heading}
-                            </button>
-                            <AnimatePresence>
-                              {isOpen && (
-                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                                  <div className="mt-1.5 pl-2.5 border-l border-paper/10 space-y-0.5">
-                                    {mo.expand.lines.map((ln) => <p key={ln} className="text-xs text-paper/25">{ln}</p>)}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </>
                         )}
                       </div>
                     ) : (
-                      <div className={`pb-3 ${i < visMoments.length - 1 && visMoments[i + 1].day !== mo.day ? "border-b border-ink/5" : ""}`}>
-                        <p className={`text-sm ${mo.type === "adjust" ? "text-ink/70 font-medium" : mo.type === "monitor" ? "text-ink/40" : "text-ink/60"}`}>{mo.action}</p>
-                        {mo.reasoning && <p className="text-xs text-ink/25 mt-0.5">{mo.reasoning}</p>}
+                      /* Standard moment */
+                      <div className={`pb-3 ${i < vis.length - 1 && vis[i + 1]?.day !== mo.day ? "border-b border-ink/4" : ""}`}>
+                        <p className={`text-sm ${mo.type === "adjust" ? "text-ink/65 font-medium" : mo.type === "monitor" ? "text-ink/35" : "text-ink/55"}`}>{mo.action}</p>
+
+                        {/* Reasoning — collapsed */}
+                        <button onClick={() => toggleR(i)} className="mt-1 text-[11px] text-ink/15 hover:text-ink/30 transition-colors">
+                          <span className="inline-block transition-transform mr-0.5" style={{ transform: rOpen ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
+                          {rOpen ? "Less" : "Why"}
+                        </button>
+                        <AnimatePresence>
+                          {rOpen && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.15 }} className="overflow-hidden">
+                              <div className="mt-1 pl-2 border-l border-ink/6 space-y-0.5 text-[11px] text-ink/25">
+                                <p><span className="text-mint">Signal</span> {mo.reasoning.signal}</p>
+                                <p><span className="text-electric">Culture</span> {mo.reasoning.culture}</p>
+                                <p><span className="text-sun">Artist</span> {mo.reasoning.artist}</p>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
                         {mo.tool && (
-                          <a href={mo.tool.href} target={mo.tool.external ? "_blank" : undefined} rel={mo.tool.external ? "noreferrer noopener" : undefined} className="inline-flex items-center gap-1 mt-1.5 text-xs text-ink/20 hover:text-signal transition-colors">
-                            <span className="w-1 h-1 rounded-full bg-ink/10" />{mo.tool.label} <span>{mo.tool.external ? "↗" : "→"}</span>
+                          <a href={mo.tool.href} target={mo.tool.external ? "_blank" : undefined} rel={mo.tool.external ? "noreferrer noopener" : undefined} className="inline-flex items-center gap-1 mt-1 text-[11px] text-ink/15 hover:text-signal transition-colors">
+                            <span className="w-1 h-1 rounded-full bg-ink/8" />{mo.tool.label} {mo.tool.external ? "↗" : "→"}
                           </a>
-                        )}
-                        {mo.expand && (
-                          <>
-                            <button onClick={() => toggle(i)} className="block mt-1.5 text-xs text-ink/18 hover:text-ink/35 transition-colors">
-                              <span className="inline-block transition-transform mr-0.5" style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}>›</span>
-                              {isOpen ? "Less" : mo.expand.heading}
-                            </button>
-                            <AnimatePresence>
-                              {isOpen && (
-                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                                  <div className="mt-1.5 pl-2.5 border-l border-ink/6 space-y-0.5">
-                                    {mo.expand.lines.map((ln) => <p key={ln} className="text-xs text-ink/28">{ln}</p>)}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </>
                         )}
                       </div>
                     )}
                   </motion.div>
                 );
               })}
+
+              {/* Active indicator — replaces system bar */}
+              {step === "done" && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="relative pl-7 pt-2 pb-4">
+                  <span className="absolute left-0 top-[0.85rem] w-[7px] h-[7px] rounded-full bg-mint animate-pulse" />
+                  <span className="text-xs text-ink/25 font-mono">System active · next eval 48h</span>
+                </motion.div>
+              )}
+
               <div ref={endRef} />
             </div>
 
-            {/* System bar */}
             {step === "done" && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.3 }} className="mt-8 rounded-xl bg-ink text-paper px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-mint animate-pulse" />
-                  <span className="font-display font-bold text-sm">System active</span>
-                  <span className="text-paper/20 text-xs font-mono">{activeInput?.trackName} · {activeInput?.artistStage} · {fmt(BUDGET_MAP(activeInput?.budget ?? 0))}</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="text-paper/30"><span className={dirColor(output.context.growthDir)}>{dirArrow(output.context.growthDir)}</span> {output.context.growth}</span>
-                  <span className="text-paper/18 font-mono">Next eval 48h</span>
-                </div>
-              </motion.div>
-            )}
-
-            {step === "done" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.3 }} className="mt-6 pt-4 border-t border-ink/6">
-                <button onClick={reset} className="group inline-flex items-center gap-2 rounded-full border border-ink/15 px-5 py-2.5 text-sm font-medium hover:bg-ink hover:text-paper transition-colors">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mt-6 pt-4 border-t border-ink/5">
+                <button onClick={reset} className="group inline-flex items-center gap-1.5 rounded-full border border-ink/12 px-4 py-2 text-xs font-medium hover:bg-ink hover:text-paper transition-colors">
                   <span className="group-hover:-translate-x-0.5 transition-transform">←</span> Run another
                 </button>
               </motion.div>
