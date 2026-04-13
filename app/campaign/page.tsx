@@ -157,6 +157,140 @@ function generate(input: CampaignInput): SystemOutput {
 function decisionColor(d: Decision) { return d === "PUSH" ? "text-signal" : d === "TEST" ? "text-sun" : "text-electric"; }
 function dotFill(t: Moment["type"]) { return t === "decision" ? "bg-ink" : t === "deploy" ? "bg-mint" : t === "execute" ? "bg-electric" : t === "adjust" ? "bg-signal" : "bg-ink/15"; }
 
+/* ─── Ecosystem Map ────────────────────────────────────── */
+
+const MODULES = [
+  { id: "signal", label: "Signal Monitor", angle: -90 },
+  { id: "culture", label: "Cultural Intelligence", angle: -18 },
+  { id: "spend", label: "Spend Engine", angle: 54 },
+  { id: "youtube", label: "YouTube Coach", angle: 126 },
+  { id: "lens", label: "Artist & Track Lens", angle: 198 },
+] as const;
+
+function EcosystemMap({ decision, onComplete }: { decision: Decision; onComplete: () => void }) {
+  const [phase, setPhase] = useState<"nodes" | "connect" | "signal" | "converge" | "decide" | "out">("nodes");
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setPhase("connect"), 600),
+      setTimeout(() => setPhase("signal"), 1200),
+      setTimeout(() => setPhase("converge"), 2400),
+      setTimeout(() => setPhase("decide"), 3200),
+      setTimeout(() => setPhase("out"), 4200),
+      setTimeout(onComplete, 4800),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [onComplete]);
+
+  const phaseGte = (p: typeof phase) => {
+    const order = ["nodes", "connect", "signal", "converge", "decide", "out"];
+    return order.indexOf(phase) >= order.indexOf(p);
+  };
+
+  const CX = 240, CY = 160, R = 110;
+  const decColor = decision === "PUSH" ? "#FF4A1C" : decision === "TEST" ? "#FFD24C" : "#2C25FF";
+
+  return (
+    <div className="flex items-center justify-center py-8 md:py-12">
+      <svg viewBox="0 0 480 320" className="w-full max-w-[520px]" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          {MODULES.map((mod, i) => {
+            const rad = (mod.angle * Math.PI) / 180;
+            const mx = CX + Math.cos(rad) * R;
+            const my = CY + Math.sin(rad) * R;
+            return (
+              <linearGradient key={`grad-${i}`} id={`line-grad-${i}`} x1={mx} y1={my} x2={CX} y2={CY} gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#0E0E0E" stopOpacity={0.06} />
+                <stop offset="100%" stopColor="#0E0E0E" stopOpacity={0.15} />
+              </linearGradient>
+            );
+          })}
+        </defs>
+
+        {/* Connection lines */}
+        {MODULES.map((mod, i) => {
+          const rad = (mod.angle * Math.PI) / 180;
+          const mx = CX + Math.cos(rad) * R;
+          const my = CY + Math.sin(rad) * R;
+          return (
+            <line
+              key={`conn-${i}`}
+              x1={mx} y1={my} x2={CX} y2={CY}
+              stroke={`url(#line-grad-${i})`}
+              strokeWidth={1}
+              opacity={phaseGte("connect") ? 1 : 0}
+              style={{ transition: "opacity 0.4s ease" }}
+            />
+          );
+        })}
+
+        {/* Signal pulses — dots moving along connections */}
+        {phaseGte("signal") && !phaseGte("out") && MODULES.map((mod, i) => {
+          const rad = (mod.angle * Math.PI) / 180;
+          const mx = CX + Math.cos(rad) * R;
+          const my = CY + Math.sin(rad) * R;
+          const converging = phaseGte("converge");
+          return (
+            <circle key={`pulse-${i}`} r={2.5} fill="#0E0E0E" opacity={0.25}>
+              <animateMotion
+                dur={converging ? "0.6s" : "1.8s"}
+                repeatCount={converging ? "1" : "indefinite"}
+                begin={converging ? "0s" : `${i * 0.3}s`}
+                fill={converging ? "freeze" : "remove"}
+                path={`M${mx - CX},${my - CY} L0,0`}
+              />
+            </circle>
+          );
+        })}
+
+        {/* Module nodes */}
+        {MODULES.map((mod, i) => {
+          const rad = (mod.angle * Math.PI) / 180;
+          const mx = CX + Math.cos(rad) * R;
+          const my = CY + Math.sin(rad) * R;
+          const converged = phaseGte("converge");
+          return (
+            <g key={mod.id} opacity={phaseGte("nodes") ? (phaseGte("out") ? 0.15 : 1) : 0} style={{ transition: "opacity 0.4s ease" }}>
+              {/* Pulse ring */}
+              {phaseGte("signal") && !converged && (
+                <circle cx={mx} cy={my} r={12} fill="none" stroke="#0E0E0E" strokeWidth={0.5} opacity={0.08}>
+                  <animate attributeName="r" values="12;20;12" dur="2.5s" begin={`${i * 0.4}s`} repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.08;0;0.08" dur="2.5s" begin={`${i * 0.4}s`} repeatCount="indefinite" />
+                </circle>
+              )}
+              <circle cx={mx} cy={my} r={converged ? 3 : 5} fill="#0E0E0E" opacity={converged ? 0.12 : 0.65} style={{ transition: "all 0.5s ease" }} />
+              <text x={mx} y={my + (mod.angle > 0 && mod.angle < 180 ? 16 : -12)} textAnchor="middle" className="text-[8px] font-mono" fill="#0E0E0E" opacity={converged ? 0.08 : 0.25} style={{ transition: "opacity 0.4s ease" }}>
+                {mod.label}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Center node */}
+        <circle cx={CX} cy={CY} r={phaseGte("converge") ? 18 : 8} fill={phaseGte("decide") ? decColor : "#0E0E0E"} opacity={phaseGte("decide") ? 0.9 : 0.7} style={{ transition: "all 0.5s ease" }}>
+          {phaseGte("signal") && !phaseGte("converge") && (
+            <animate attributeName="r" values="8;10;8" dur="1.5s" repeatCount="indefinite" />
+          )}
+        </circle>
+
+        {/* Decision text */}
+        {phaseGte("decide") && (
+          <text x={CX} y={CY + 4} textAnchor="middle" className="text-[11px] font-mono font-bold" fill="#FAF7F2" opacity={phaseGte("out") ? 0.5 : 1} style={{ transition: "opacity 0.3s ease" }}>
+            {decision}
+          </text>
+        )}
+
+        {/* Center label */}
+        {!phaseGte("decide") && (
+          <text x={CX} y={CY + 32} textAnchor="middle" className="text-[8px] font-mono" fill="#0E0E0E" opacity={0.2}>
+            Campaign System
+          </text>
+        )}
+      </svg>
+    </div>
+  );
+}
+
 /* ─── Graph ─────────────────────────────────────────────── */
 
 function Graph({ moments, activeIdx, onHover }: { moments: Moment[]; activeIdx: number | null; onHover: (i: number | null) => void }) {
@@ -212,7 +346,7 @@ const SCENARIOS: { label: string; sub: string; input: CampaignInput }[] = [
 /* ─── Page ──────────────────────────────────────────────── */
 
 export default function CampaignPage() {
-  const [step, setStep] = useState<"input" | "boot" | "run" | "done">("input");
+  const [step, setStep] = useState<"input" | "boot" | "ecosystem" | "run" | "done">("input");
   const [output, setOutput] = useState<SystemOutput | null>(null);
   const [bootIdx, setBootIdx] = useState(0);
   const [evIdx, setEvIdx] = useState(0);
@@ -231,8 +365,13 @@ export default function CampaignPage() {
   useEffect(() => {
     if (step !== "boot") return;
     if (bootIdx < BOOT.length - 1) { const t = setTimeout(() => setBootIdx((b) => b + 1), 480); return () => clearTimeout(t); }
-    else { const t = setTimeout(() => { setStep("run"); setEvIdx(0); }, 280); return () => clearTimeout(t); }
+    else { const t = setTimeout(() => setStep("ecosystem"), 280); return () => clearTimeout(t); }
   }, [step, bootIdx]);
+
+  const onEcosystemComplete = useCallback(() => {
+    setStep("run");
+    setEvIdx(0);
+  }, []);
 
   useEffect(() => {
     if (step !== "run" || !output) return;
@@ -329,6 +468,13 @@ export default function CampaignPage() {
                 </motion.div>
               ))}
               <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (bootIdx + 1) / BOOT.length }} transition={{ duration: 0.25 }} className="h-px bg-ink/12 mt-5 origin-left" />
+            </motion.div>
+          )}
+
+          {/* Ecosystem */}
+          {step === "ecosystem" && output && (
+            <motion.div key="ecosystem" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
+              <EcosystemMap decision={output.decision} onComplete={onEcosystemComplete} />
             </motion.div>
           )}
         </AnimatePresence>
