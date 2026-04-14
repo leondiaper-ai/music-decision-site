@@ -3,15 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import MarketingAction, { type MarketingState } from "@/components/MarketingAction";
-
-function parseMarketingState(decision: string): MarketingState {
-  const d = (decision ?? "").toUpperCase();
-  if (d.startsWith("PUSH")) return "PUSH";
-  if (d.startsWith("HOLD")) return "HOLD";
-  if (d.startsWith("TEST")) return "TEST";
-  return "OTHER";
-}
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -1296,32 +1287,38 @@ export default function CampaignPage() {
                   confidence adjusted using prior campaign outcomes
                 </p>
 
-                {/* WHAT CHANGED — single trajectory line specific to this scenario */}
-                {activeScenario && (
-                  <div className="mb-4 mx-auto max-w-[480px] text-center">
-                    <div className="eyebrow text-ink/30 mb-1.5">What changed</div>
-                    <p className="text-[13px] text-ink/65 leading-relaxed">
+                {/* Unified decision detail: Why / What to do / What would change this */}
+                <div className="mx-auto max-w-[520px] space-y-4 mb-5">
+                  <div>
+                    <div className="eyebrow text-ink/30 mb-1.5">Why this decision</div>
+                    <p className="text-[13.5px] text-ink/75 leading-relaxed">
                       {output.decision === "PUSH"
-                        ? "Culture signal and velocity moved together over the last cycle — the lift is broad, not single-source."
+                        ? "Culture and velocity moved together — the lift is broad, not single-source, so momentum is real enough to back."
                         : output.decision === "TEST"
-                        ? "Early save curve is forming, but reach has not broadened beyond the initial segment."
-                        : "Catalogue engagement is holding, but no new market or cohort has started to pull."}
+                        ? "The save curve is forming, but reach has not broadened past the initial segment — validate before committing."
+                        : "Catalogue engagement is holding, but no new cohort has started to pull — there is nothing yet to spend into."}
                     </p>
                   </div>
-                )}
-
-                {/* Marketing Action — spend behaviour derived from decision + watch */}
-                <div className="mb-5">
-                  <MarketingAction
-                    state={parseMarketingState(output.decision)}
-                    watch={
-                      output.decision === "PUSH"
-                        ? "Streams hold above the new baseline for 7–10 days."
+                  <div>
+                    <div className="eyebrow text-ink/30 mb-1.5">What to do now</div>
+                    <p className="text-[13.5px] text-ink/85 leading-relaxed font-medium">
+                      {output.decision === "PUSH"
+                        ? "Scale paid and editorial support around the working moment while behaviour remains elevated."
                         : output.decision === "TEST"
-                        ? "Save rate holds above baseline through the next release window."
-                        : "One signal — save rate, reach or retention — moves above baseline for two reporting weeks."
-                    }
-                  />
+                        ? "Run a contained test against the responsive segment — no broad commitment yet."
+                        : "Hold spend and protect the base — wait for one signal to separate."}
+                    </p>
+                  </div>
+                  <div>
+                    <div className="eyebrow text-ink/30 mb-1.5">What would change this</div>
+                    <p className="text-[13.5px] text-ink/70 leading-relaxed">
+                      {output.decision === "PUSH"
+                        ? "Streams falling back to the prior baseline inside 7–10 days."
+                        : output.decision === "TEST"
+                        ? "Save rate holding above baseline through the next release window."
+                        : "One signal — save rate, reach or retention — clearing baseline for two reporting weeks."}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex justify-center gap-3">

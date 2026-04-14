@@ -3,16 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import MarketingAction, { type MarketingState } from "@/components/MarketingAction";
-
-function parseMarketingState(decision: string): MarketingState {
-  const d = decision.toUpperCase();
-  if (d.startsWith("PUSH")) return "PUSH";
-  if (d.startsWith("HOLD")) return "HOLD";
-  if (d.startsWith("TEST")) return "TEST";
-  return "OTHER";
-}
-
 const FULL_TOOL_URL = "https://pih-v2.vercel.app/label";
 
 /* ── Data model ────────────────────────────────────────────── */
@@ -612,42 +602,26 @@ export default function LensPage() {
                     >
                       {/* DECISION */}
                       <div className="mb-6 pb-6 border-b border-ink/8">
-                        <div className="eyebrow text-ink/30 mb-2">Engine result</div>
+                        <div className="eyebrow text-ink/30 mb-2">Decision</div>
                         <div className={`font-display font-black text-3xl md:text-4xl leading-tight tracking-tight ${result.decisionColor}`}>
                           {result.decision}
                         </div>
-                        <p className="mt-3 text-[11px] md:text-[12px] text-ink/40 leading-snug max-w-lg">
-                          Structured decision engine with AI-assisted interpretation — built to evolve toward agent-assisted workflows.
+                      </div>
+
+                      {/* WHY THIS DECISION — merged trajectory + reasoning */}
+                      <div className="mb-6">
+                        <div className="eyebrow text-ink/30 mb-1.5">Why this decision</div>
+                        <p className="text-sm md:text-base text-ink/75 leading-relaxed">
+                          {result.whatChanged ? `${result.whatChanged} ${result.why}` : result.why}
                         </p>
                       </div>
 
-                      {/* WHAT CHANGED — trajectory block, reads before Why */}
-                      {result.whatChanged && (
-                        <div className="mb-6">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="inline-block w-1 h-1 rounded-full bg-ink/40" />
-                            <div className="eyebrow text-ink/30">What changed</div>
-                          </div>
-                          <p className="text-sm md:text-base text-ink/70 leading-relaxed">
-                            {result.whatChanged}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* WHY */}
+                      {/* WHAT TO DO NOW */}
                       <div className="mb-6">
-                        <div className="eyebrow text-ink/30 mb-1.5">Why</div>
-                        <p className="text-sm md:text-base text-ink/70 leading-relaxed">
-                          {result.why}
-                        </p>
-                      </div>
-
-                      {/* WHAT TO DO NEXT */}
-                      <div className="mb-6">
-                        <div className="eyebrow text-ink/30 mb-2">What to do next</div>
-                        <ul className="space-y-2">
-                          {result.actions.map((action) => (
-                            <li key={action} className="flex items-start gap-2 text-sm md:text-base text-ink/80 leading-relaxed font-medium">
+                        <div className="eyebrow text-ink/30 mb-2">What to do now</div>
+                        <ul className="space-y-1.5">
+                          {result.actions.slice(0, 3).map((action) => (
+                            <li key={action} className="flex items-start gap-2 text-sm md:text-base text-ink/85 leading-relaxed font-medium">
                               <span className="text-signal mt-0.5 shrink-0">→</span>
                               {action}
                             </li>
@@ -655,42 +629,23 @@ export default function LensPage() {
                         </ul>
                       </div>
 
-                      {/* SUPPORTING SIGNALS */}
-                      <div className="pt-5 border-t border-ink/6">
-                        <div className="eyebrow text-ink/20 mb-2">Supporting signals</div>
-                        <ul className="space-y-1">
-                          {result.signals.map((sig) => (
-                            <li key={sig} className="flex items-start gap-2 text-[13px] text-ink/35 leading-relaxed">
-                              <span className="mt-0.5 shrink-0">·</span>
-                              {sig}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* NEXT SIGNAL TO WATCH — forward-looking */}
+                      {/* WHAT WOULD CHANGE THIS */}
                       {result.nextSignal && (
-                        <div className="mt-5 pt-4 border-t border-ink/6">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-ink/40 text-[11px]">→</span>
-                            <div className="eyebrow text-ink/30">Next signal to watch</div>
-                          </div>
+                        <div className="mb-5">
+                          <div className="eyebrow text-ink/30 mb-1.5">What would change this</div>
                           <p className="text-sm md:text-[15px] text-ink/70 leading-relaxed">
                             {result.nextSignal}
                           </p>
                         </div>
                       )}
 
-                      {/* MARKETING ACTION — translates decision into spend behaviour */}
-                      <MarketingAction
-                        state={parseMarketingState(result.decision)}
-                        watch={result.nextSignal}
-                      />
-
-                      {/* SYSTEM SIGNAL — reinforces that the decision is systematic */}
-                      <p className="mt-5 pt-4 border-t border-ink/6 text-[10px] tracking-[0.14em] uppercase font-mono text-ink/30">
-                        Based on 28d performance vs baseline patterns
-                      </p>
+                      {/* SIGNALS — single line */}
+                      {result.signals.length > 0 && (
+                        <p className="pt-4 border-t border-ink/6 text-[12px] text-ink/40 leading-snug">
+                          <span className="eyebrow text-ink/25 mr-2">Signals</span>
+                          {result.signals.slice(0, 3).join(" · ")}
+                        </p>
+                      )}
 
                       {/* Bottom action row */}
                       <div className="mt-5 pt-4 border-t border-ink/6 flex items-center gap-4 flex-wrap">
