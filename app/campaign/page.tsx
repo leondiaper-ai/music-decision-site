@@ -1108,10 +1108,22 @@ function useConfidenceDisplay(target: number, jitterAmount: number): number {
 type PageMode = "ambient" | "evaluating" | "resolved";
 
 export default function CampaignPage() {
-  const [mode, setMode] = useState<PageMode>("ambient");
-  const [output, setOutput] = useState<SystemOutput | null>(null);
-  const [scenarioState, setScenarioState] = useState<LoopState | null>(null);
-  const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
+  // Land resolved — the proof state is the hero. Visitors see a real decision
+  // the moment the page loads; scenarios below let them run another.
+  const defaultScenario = SCENARIOS[0];
+  const defaultOutput = generate(defaultScenario.input);
+  const defaultResolvedState: LoopState = {
+    phase: "decide",
+    decision: defaultOutput.decision,
+    confidence: defaultOutput.confidence,
+    activeNodes: ["signal", "culture", "spend", "youtube", "lens"],
+    downstream: null,
+  };
+
+  const [mode, setMode] = useState<PageMode>("resolved");
+  const [output, setOutput] = useState<SystemOutput | null>(defaultOutput);
+  const [scenarioState, setScenarioState] = useState<LoopState | null>(defaultResolvedState);
+  const [activeScenario, setActiveScenario] = useState<Scenario | null>(defaultScenario);
   const loop = useSystemLoop();
 
   // Map state source: scenarioState during evaluating/resolved, otherwise ambient loop
