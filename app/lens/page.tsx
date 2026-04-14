@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import AIExplainer from "@/components/AIExplainer";
 
 const FULL_TOOL_URL = "https://pih-v2.vercel.app/label";
 
@@ -626,6 +627,16 @@ export default function LensPage() {
                           ))}
                         </ul>
                       </div>
+
+                      {/* AI DECISION EXPLAINER — LLM reasoning over structured decision inputs */}
+                      <AIExplainer
+                        decision={result.decision}
+                        why={result.why}
+                        signals={result.signals}
+                        actions={result.actions}
+                        scope={lens}
+                        accentClass={result.decisionColor}
+                      />
 
                       {/* SYSTEM SIGNAL — reinforces that the decision is systematic */}
                       <p className="mt-5 pt-4 border-t border-ink/6 text-[10px] tracking-[0.14em] uppercase font-mono text-ink/30">
