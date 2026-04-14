@@ -32,7 +32,7 @@ function normalise(body: any): ExplainerInput | null {
     actions: Array.isArray(actions)
       ? actions.filter((a): a is string => typeof a === "string").slice(0, 6)
       : undefined,
-    scope: scope === "artist" || scope === "track" || scope === "campaign" ? scope : undefined,
+    scope: scope === "artist" || scope === "track" || scope === "campaign" || scope === "youtube" ? scope : undefined,
     mode: mode === "timeline" ? "timeline" : "decision",
     moments: Array.isArray(moments)
       ? moments.filter((m): m is string => typeof m === "string").slice(0, 12)
@@ -65,13 +65,14 @@ async function callAnthropic(input: ExplainerInput, key: string): Promise<Explai
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return null;
     const parsed = JSON.parse(match[0]);
-    if (typeof parsed.shiftPotential !== "string" || typeof parsed.riskSignal !== "string") return null;
+    if (typeof parsed.aiPerspective !== "string" || typeof parsed.watchFor !== "string" || typeof parsed.ifTriggered !== "string") return null;
     return {
-      shiftPotential: parsed.shiftPotential,
-      riskSignal: parsed.riskSignal,
+      systemStance: typeof parsed.systemStance === "string" ? parsed.systemStance : "",
+      aiPerspective: parsed.aiPerspective,
+      watchFor: parsed.watchFor,
+      ifTriggered: parsed.ifTriggered,
       confidence: ["High", "Medium", "Low"].includes(parsed.confidence) ? parsed.confidence : "Medium",
       confidenceNote: typeof parsed.confidenceNote === "string" ? parsed.confidenceNote : "",
-      patternRead: typeof parsed.patternRead === "string" ? parsed.patternRead : "",
     };
   } catch {
     return null;

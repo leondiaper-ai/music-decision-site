@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * AIExplainer — "AI-assisted perspective"
+ * AIExplainer — the consistent AI interpretation layer.
  *
- * Sits below any decision surface and adds a second layer of thinking:
- *   • Shift potential — what would need to change to flip the decision
- *   • Risk signal    — what breaks if the call is ignored
- *   • Confidence     — how stable the underlying signals are
- *   • Pattern read   — (timeline mode only) the shape of the campaign
+ * Sits below any decision surface and always renders the same four blocks:
+ *   • System stance   — compact summary of the structured decision
+ *   • AI Perspective  — interprets the state beyond the raw rule
+ *   • Watch for       — the next signal worth monitoring
+ *   • If triggered    — what the system / operator should do if it appears
  *
- * Never repeats the engine's existing "why". Grounded entirely in the
- * structured decision inputs.
+ * Same pattern on Artist Lens, Track Lens, Campaign Timeline and YouTube
+ * Campaign Coach. "Mode" only changes how the AI interprets — the UI,
+ * labels and hierarchy are identical everywhere.
  */
 
 import { useCallback, useState } from "react";
@@ -19,11 +20,12 @@ import { motion, AnimatePresence } from "framer-motion";
 type Confidence = "High" | "Medium" | "Low";
 
 interface ExplainerResponse {
-  shiftPotential: string;
-  riskSignal: string;
+  systemStance: string;
+  aiPerspective: string;
+  watchFor: string;
+  ifTriggered: string;
   confidence: Confidence;
   confidenceNote: string;
-  patternRead: string;
   source?: "model" | "synth";
 }
 
@@ -32,14 +34,10 @@ export interface AIExplainerProps {
   why: string;
   signals: string[];
   actions?: string[];
-  scope?: "artist" | "track" | "campaign";
-  /** "decision" (default) or "timeline" — timeline shows pattern read. */
+  scope?: "artist" | "track" | "campaign" | "youtube";
   mode?: "decision" | "timeline";
-  /** Ordered campaign moments, only used in timeline mode. */
   moments?: string[];
-  /** Recent vs prior state — feeds trajectory reasoning. */
   whatChanged?: string;
-  /** Forward-looking signal already shown to the user. */
   nextSignal?: string;
 }
 
@@ -78,7 +76,7 @@ export default function AIExplainer({
       const json = (await res.json()) as ExplainerResponse;
       setData(json);
     } catch {
-      setError("Couldn't generate a perspective. Try again.");
+      setError("Couldn't generate an interpretation. Try again.");
     } finally {
       setLoading(false);
     }
@@ -89,8 +87,6 @@ export default function AIExplainer({
     setOpen(next);
     if (next && !data && !loading) fetchExplanation();
   }, [open, data, loading, fetchExplanation]);
-
-  const triggerLabel = mode === "timeline" ? "AI pattern read" : "AI-assisted perspective";
 
   return (
     <div className="mt-5 pt-4 border-t border-ink/6">
@@ -106,7 +102,7 @@ export default function AIExplainer({
             AI
           </span>
           <span className="text-sm font-medium text-ink/75 group-hover:text-ink transition-colors">
-            {triggerLabel}
+            AI interpretation
           </span>
         </span>
         <motion.span
@@ -132,9 +128,7 @@ export default function AIExplainer({
             <div className="mt-4 rounded-xl border border-ink/10 bg-paper/80 p-5 md:p-6">
               {/* Eyebrow */}
               <div className="flex items-center justify-between mb-4">
-                <div className="eyebrow text-ink/30">
-                  {mode === "timeline" ? "AI pattern read" : "AI-assisted perspective"}
-                </div>
+                <div className="eyebrow text-ink/30">AI interpretation</div>
                 {data?.source && (
                   <div className="text-[10px] font-mono tracking-[0.12em] uppercase text-ink/25">
                     {data.source === "model" ? "Claude · Haiku" : "Grounded synth"}
@@ -170,24 +164,12 @@ export default function AIExplainer({
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                  {/* TIMELINE: single pattern read */}
-                  {mode === "timeline" && data.patternRead && (
-                    <div>
-                      <p className="text-[15px] md:text-base text-ink/85 leading-relaxed">
-                        {data.patternRead}
-                      </p>
-                    </div>
-                  )}
+                  {data.systemStance && <Block label="System stance" body={data.systemStance} />}
+                  <Block label="AI Perspective" body={data.aiPerspective} />
+                  <Block label="Watch for" body={data.watchFor} />
+                  <Block label="If triggered" body={data.ifTriggered} />
 
-                  {/* DECISION: three blocks */}
-                  {mode === "decision" && (
-                    <>
-                      <PerspectiveBlock label="Shift potential" body={data.shiftPotential} />
-                      <PerspectiveBlock label="Risk signal" body={data.riskSignal} />
-                    </>
-                  )}
-
-                  {/* Confidence row — shown in both modes */}
+                  {/* Confidence */}
                   <div className="pt-4 border-t border-ink/6 flex flex-wrap items-center gap-x-5 gap-y-2">
                     <div className="flex items-center gap-2">
                       <span className={`inline-block w-1.5 h-1.5 rounded-full ${confidenceDot(data.confidence)}`} />
@@ -196,9 +178,7 @@ export default function AIExplainer({
                       </span>
                     </div>
                     {data.confidenceNote && (
-                      <div className="text-[12px] text-ink/55 leading-snug">
-                        {data.confidenceNote}
-                      </div>
+                      <div className="text-[12px] text-ink/55 leading-snug">{data.confidenceNote}</div>
                     )}
                   </div>
 
@@ -224,7 +204,7 @@ export default function AIExplainer({
   );
 }
 
-function PerspectiveBlock({ label, body }: { label: string; body: string }) {
+function Block({ label, body }: { label: string; body: string }) {
   if (!body) return null;
   return (
     <div>
