@@ -4,6 +4,15 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import AIExplainer from "@/components/AIExplainer";
+import MarketingAction, { type MarketingState } from "@/components/MarketingAction";
+
+function parseMarketingState(decision: string): MarketingState {
+  const d = (decision ?? "").toUpperCase();
+  if (d.startsWith("PUSH")) return "PUSH";
+  if (d.startsWith("HOLD")) return "HOLD";
+  if (d.startsWith("TEST")) return "TEST";
+  return "OTHER";
+}
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -1301,6 +1310,20 @@ export default function CampaignPage() {
                     </p>
                   </div>
                 )}
+
+                {/* Marketing Action — spend behaviour derived from decision + watch */}
+                <div className="mb-5">
+                  <MarketingAction
+                    state={parseMarketingState(output.decision)}
+                    watch={
+                      output.decision === "PUSH"
+                        ? "Streams hold above the new baseline for 7–10 days."
+                        : output.decision === "TEST"
+                        ? "Save rate holds above baseline through the next release window."
+                        : "One signal — save rate, reach or retention — moves above baseline for two reporting weeks."
+                    }
+                  />
+                </div>
 
                 {/* AI pattern read — layered on top of structured campaign signals */}
                 <div className="mb-6">

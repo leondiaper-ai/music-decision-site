@@ -45,7 +45,7 @@ export default function NorthStar() {
               <span className="absolute inline-flex h-full w-full rounded-full bg-signal opacity-60 animate-ping" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-signal" />
             </span>
-            Decision updating based on live signals
+            Allocating spend based on live signals
           </div>
 
           {/* System log — makes the loop visible without adding UI */}
@@ -63,6 +63,8 @@ export default function NorthStar() {
             <div className="text-paper/85">
               <span className="text-signal">PUSH</span> — confidence <span className="text-paper/60">85%</span>
             </div>
+            <div className="mt-2 pt-2 border-t border-paper/10 text-paper/30 tracking-[0.18em] uppercase text-[10px]">[ marketing ]</div>
+            <div className="text-paper/85">scale spend — marquee + off-platform</div>
           </motion.div>
 
           <motion.div

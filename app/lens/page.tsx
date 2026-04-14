@@ -4,6 +4,15 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import AIExplainer from "@/components/AIExplainer";
+import MarketingAction, { type MarketingState } from "@/components/MarketingAction";
+
+function parseMarketingState(decision: string): MarketingState {
+  const d = decision.toUpperCase();
+  if (d.startsWith("PUSH")) return "PUSH";
+  if (d.startsWith("HOLD")) return "HOLD";
+  if (d.startsWith("TEST")) return "TEST";
+  return "OTHER";
+}
 
 const FULL_TOOL_URL = "https://pih-v2.vercel.app/label";
 
@@ -672,6 +681,12 @@ export default function LensPage() {
                           </p>
                         </div>
                       )}
+
+                      {/* MARKETING ACTION — translates decision into spend behaviour */}
+                      <MarketingAction
+                        state={parseMarketingState(result.decision)}
+                        watch={result.nextSignal}
+                      />
 
                       {/* AI-ASSISTED PERSPECTIVE — adds shift potential, risk, confidence */}
                       <AIExplainer
