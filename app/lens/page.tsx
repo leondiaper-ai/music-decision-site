@@ -593,7 +593,7 @@ export default function LensPage() {
                           {result.decision}
                         </div>
                         <p className="mt-3 text-[11px] md:text-[12px] text-ink/40 leading-snug max-w-lg">
-                          Decisions are generated from structured performance signals, with AI used to interpret and extend the model.
+                          Structured decision engine with AI-assisted interpretation — built to evolve toward agent-assisted workflows.
                         </p>
                       </div>
 

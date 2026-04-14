@@ -48,6 +48,9 @@ export default function Hero() {
             <p className="mt-3 text-sm md:text-base text-ink/55">
               Not dashboards. Direction.
             </p>
+            <p className="mt-5 text-[12px] md:text-[13px] text-ink/40 leading-snug max-w-lg">
+              Structured decision engine with AI-assisted interpretation — built to evolve toward agent-assisted workflows.
+            </p>
           </motion.div>
 
           <motion.div

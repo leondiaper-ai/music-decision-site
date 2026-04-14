@@ -5,6 +5,7 @@ import Hero from "@/components/Hero";
 import DecisionExamples from "@/components/DecisionExamples";
 import ToolCards from "@/components/ToolCards";
 import WhySection from "@/components/WhySection";
+import WhereNext from "@/components/WhereNext";
 import Footer from "@/components/Footer";
 
 export default function Page() {
@@ -17,6 +18,7 @@ export default function Page() {
       <DecisionExamples />
       <ToolCards />
       <WhySection />
+      <WhereNext />
       <Footer />
     </main>
   );
