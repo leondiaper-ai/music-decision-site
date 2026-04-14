@@ -63,12 +63,6 @@ export default function Hero() {
               See the system
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </a>
-            <a
-              href="/lens"
-              className="inline-flex items-center gap-2 rounded-full border border-ink/20 px-6 py-3 text-sm font-medium hover:border-ink hover:bg-ink hover:text-paper transition-colors"
-            >
-              Try the demo
-            </a>
           </motion.div>
         </div>
       </div>
