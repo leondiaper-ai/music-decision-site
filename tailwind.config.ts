@@ -18,10 +18,6 @@ const config: Config = {
         mint: "#1FBE7A",     // positive state
         blush: "#FFD3C9",    // soft block
         sun: "#FFD24C",      // highlight
-        // Decision system — one color per state, shared across all products
-        push: "#1FBE7A",     // PUSH → scale, go, momentum
-        hold: "#F5B73D",     // HOLD → pause, protect
-        test: "#2C6BFF",     // TEST → explore, validate
       },
       fontFamily: {
         display: ["var(--font-display)", "ui-serif", "Georgia", "serif"],
