@@ -1169,12 +1169,12 @@ export default function CampaignPage() {
       <section className="bg-ink text-paper pt-12 pb-32 md:pt-16 md:pb-44 relative">
         <div className="mx-auto max-w-[1120px] px-6 md:px-10">
           <h1 className="font-display text-4xl md:text-6xl leading-[0.92] font-bold max-w-lg">
-            One system.<br />
-            <span className="italic font-light text-signal">Every decision.</span>
+            Inject a campaign.<br />
+            <span className="italic font-light text-signal">Get a call.</span>
           </h1>
           <p className="mt-3 text-sm text-paper/55 max-w-sm">Most teams see these signals separately.</p>
           <p className="mt-1 text-sm text-paper/35 max-w-sm">The money gets spent anyway.</p>
-          <p className="mt-4 font-mono text-[11px] text-paper/40 uppercase tracking-[0.14em] max-w-sm">Messy inputs. One call.</p>
+          <p className="mt-4 font-mono text-[11px] text-paper/40 uppercase tracking-[0.14em] max-w-sm">From scenario to decision — live.</p>
         </div>
       </section>
 
@@ -1182,6 +1182,12 @@ export default function CampaignPage() {
           decision + intelligence layer anchor directly beneath the map so
           injection → decision → reasoning happens in one zone. */}
       <section className="mx-auto max-w-[1120px] px-4 md:px-8 -mt-28 md:-mt-40 relative z-10">
+        {isAmbient && (
+          <div className="max-w-[680px] mx-auto mb-4 md:mb-6 px-2 flex items-baseline justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink/30">Setup · inputs teams already have</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink/25">waiting for a call</span>
+          </div>
+        )}
         <SystemMap
           state={currentState}
           displayConfidence={displayConfidence}
@@ -1204,6 +1210,9 @@ export default function CampaignPage() {
                 aria-hidden
                 className="block w-px h-5 bg-ink/15"
               />
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/40 text-center">
+                This is the call teams act on · budget deployed with direction
+              </p>
               <NorthStarIntelligence output={output} onReset={reset} />
             </motion.div>
           )}
@@ -1282,8 +1291,8 @@ export default function CampaignPage() {
                 className="max-w-[640px] mx-auto"
               >
                 <div className="flex items-baseline justify-between mb-5">
-                  <p className="font-mono text-[11px] text-ink/40 uppercase tracking-[0.12em]">Inject a messy scenario → one clear call</p>
-                  <p className="font-mono text-[10px] text-ink/25">the system resolves it</p>
+                  <p className="font-mono text-[11px] text-ink/55 uppercase tracking-[0.12em]">Run a real scenario</p>
+                  <p className="font-mono text-[10px] text-ink/30">this is where the system proves itself</p>
                 </div>
                 <div className="flex flex-col gap-2.5">
                   {SCENARIOS.map((sc) => (
