@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import DecisionIntelligence, { type Intelligence } from "@/components/DecisionIntelligence";
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -1154,75 +1153,19 @@ export default function CampaignPage() {
         <AnimatePresence initial={false}>
           {isResolved && output && (
             <motion.div
-              key="resolved-inline"
-              initial={{ opacity: 0, y: 8 }}
+              key="resolved-intel"
+              initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.35, delay: 0.15 }}
-              className="mx-auto mt-6 md:mt-8 max-w-[560px] rounded-2xl border border-ink/10 bg-paper shadow-[0_10px_30px_rgba(14,14,14,0.06)] p-5 md:p-6"
+              transition={{ duration: 0.3, delay: 0.15 }}
+              className="mx-auto -mt-3 md:-mt-5 max-w-[460px] relative z-20 flex flex-col items-center"
             >
-              {activeScenario && (
-                <p className="mb-4 text-[12px] text-ink/50 italic leading-snug">
-                  <span className="font-mono not-italic uppercase tracking-[0.14em] text-ink/30 mr-2">Scenario</span>
-                  {activeScenario.situation}
-                </p>
-              )}
-              {(() => {
-                const d = output.decision;
-                const decisionColor =
-                  d === "PUSH" ? "text-signal" : d === "TEST" ? "text-electric" : "text-warning";
-                const intel: Intelligence = {
-                  decision: d,
-                  decisionColor,
-                  why:
-                    d === "PUSH"
-                      ? "Culture and velocity moved together — momentum is broad, not single-source."
-                      : d === "TEST"
-                      ? "A save curve is forming, but reach has not broadened past the initial segment."
-                      : "Catalogue is holding, but no new cohort has started to pull.",
-                  doNow:
-                    d === "PUSH"
-                      ? "Scale support around the working moment while behaviour stays elevated."
-                      : d === "TEST"
-                      ? "Run a contained test against the responsive segment — no broad commitment yet."
-                      : "Hold spend and protect the base — wait for one signal to separate.",
-                  aiRead:
-                    d === "PUSH"
-                      ? "Save rate, reach and retention are lifting together — the shape reads as sustained, not a single-metric spike."
-                      : d === "TEST"
-                      ? "Early conversion is live but narrow — the lift is real in one segment and hasn't radiated yet."
-                      : "Engagement is stable at the base — nothing fresh is pulling, so there is no cohort to spend into.",
-                  spendLogic:
-                    d === "PUSH"
-                      ? `Allocate against the working moment — concentrated paid + editorial; confidence elevated by ${output.confidence}% projection.`
-                      : d === "TEST"
-                      ? "Controlled test spend against the responsive segment — scale only once reach broadens."
-                      : "Hold spend. Any capital here teaches the wrong lesson about the base.",
-                  watch:
-                    d === "PUSH"
-                      ? "Whether streams hold above the new baseline for 7–10 days."
-                      : d === "TEST"
-                      ? "Save rate holding above baseline through the next release window."
-                      : "One signal — save rate, reach or retention — clearing baseline for two reporting weeks.",
-                  ifConfirmed:
-                    d === "PUSH"
-                      ? "Extend reach and move from backing momentum to scaling it across adjacent cohorts."
-                      : d === "TEST"
-                      ? "Shift from test to push — commit support to the format the signal validated."
-                      : "Move to a contained test on the format starting to separate.",
-                  signalLine: `projected ${output.outcome}`,
-                };
-                return <DecisionIntelligence data={intel} theme="paper" />;
-              })()}
-
-              <div className="mt-5 pt-4 border-t border-ink/6 flex justify-end">
-                <button
-                  onClick={reset}
-                  className="group inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-4 py-2 text-xs font-mono font-medium hover:bg-ink hover:text-paper transition-colors"
-                >
-                  <span className="group-hover:-translate-x-0.5 transition-transform">↺</span> Inject another scenario
-                </button>
-              </div>
+              {/* Tether — visually connects the trigger to the central node */}
+              <span
+                aria-hidden
+                className="block w-px h-5 bg-ink/15"
+              />
+              <NorthStarIntelligence output={output} onReset={reset} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1350,5 +1293,124 @@ export default function CampaignPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+/* ─── North Star intelligence — trigger + inline reasoning panel ───────
+   Tied to the central decision node; does NOT repeat the decision itself.
+   System 1 lives on the node. System 2 lives here, on demand. */
+function NorthStarIntelligence({
+  output,
+  onReset,
+}: {
+  output: SystemOutput;
+  onReset: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [justResolved, setJustResolved] = useState(true);
+  useEffect(() => {
+    setJustResolved(true);
+    const t = setTimeout(() => setJustResolved(false), 1400);
+    return () => clearTimeout(t);
+  }, [output.decision, output.outcome]);
+
+  const d = output.decision;
+  const aiRead =
+    d === "PUSH"
+      ? "Save rate, reach and retention are lifting together — the shape reads as sustained, not a single-metric spike."
+      : d === "TEST"
+      ? "Early conversion is live but narrow — the lift is real in one segment and has not radiated yet."
+      : "Engagement is stable at the base — nothing fresh is pulling, so there is no cohort to spend into.";
+  const spendLogic =
+    d === "PUSH"
+      ? `Concentrated paid + editorial against the working moment — confidence elevated by ${output.confidence}% projection.`
+      : d === "TEST"
+      ? "Controlled test spend against the responsive segment — scale only once reach broadens."
+      : "Hold spend. Any capital here teaches the wrong lesson about the base.";
+  const watch =
+    d === "PUSH"
+      ? "Whether streams hold above the new baseline for 7–10 days."
+      : d === "TEST"
+      ? "Save rate holding above baseline through the next release window."
+      : "One signal — save rate, reach or retention — clearing baseline for two reporting weeks.";
+  const ifConfirmed =
+    d === "PUSH"
+      ? "Extend reach and move from backing momentum to scaling it across adjacent cohorts."
+      : d === "TEST"
+      ? "Shift from test to push — commit support to the format the signal validated."
+      : "Move to a contained test on the format starting to separate.";
+
+  return (
+    <div className="w-full flex flex-col items-center">
+      {/* Trigger — pulsing idle, brief activation flash on decision change */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={open ? "Hide intelligence" : "Open intelligence"}
+        className="group relative inline-flex items-center gap-2.5 rounded-full border border-ink/15 bg-paper px-4 py-2 text-[11.5px] font-mono uppercase tracking-[0.14em] text-ink/70 shadow-[0_6px_18px_rgba(14,14,14,0.08)] hover:border-ink/30 hover:shadow-[0_8px_22px_rgba(14,14,14,0.12)] transition-all"
+      >
+        <span className="relative inline-flex items-center justify-center">
+          <span
+            aria-hidden
+            className={`absolute inset-[-6px] rounded-full bg-ink/15 ${
+              justResolved ? "animate-ping" : "animate-pulse"
+            }`}
+          />
+          <span className="relative inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-ink text-paper text-[9px] font-mono tracking-[0.1em]">
+            AI
+          </span>
+        </span>
+        <span>{open ? "Hide intelligence" : "Open intelligence"}</span>
+        <span className={`text-ink/40 text-[10px] transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="ns-panel"
+            initial={{ opacity: 0, y: -4, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -4, height: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden w-full"
+          >
+            <div className="mt-3 w-full rounded-2xl border border-ink/10 bg-paper shadow-[0_10px_30px_rgba(14,14,14,0.06)] p-5 space-y-3.5">
+              {([
+                ["AI Read", aiRead],
+                ["Spend logic", spendLogic],
+                ["Watch", watch],
+                ["If confirmed", ifConfirmed],
+              ] as const).map(([label, body]) => (
+                <div key={label}>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-ink/40 mb-1">
+                    {label}
+                  </div>
+                  <p className="text-[13.5px] leading-snug text-ink/85">{body}</p>
+                </div>
+              ))}
+              <div className="pt-3 mt-1 border-t border-ink/6 flex justify-end">
+                <button
+                  onClick={onReset}
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-3.5 py-1.5 text-[11px] font-mono font-medium hover:bg-ink hover:text-paper transition-colors"
+                >
+                  <span className="group-hover:-translate-x-0.5 transition-transform">↺</span> Inject another
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Compact reset when panel is closed — keeps the interaction tight */}
+      {!open && (
+        <button
+          onClick={onReset}
+          className="mt-3 text-[10.5px] font-mono uppercase tracking-[0.14em] text-ink/35 hover:text-ink/70 transition-colors"
+        >
+          ↺ Inject another scenario
+        </button>
+      )}
+    </div>
   );
 }
