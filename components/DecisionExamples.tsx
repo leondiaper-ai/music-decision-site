@@ -6,7 +6,7 @@ const examples = [
   {
     tag: "TRACK STATUS",
     status: "TEST",
-    statusColor: "bg-electric text-paper",
+    statusColor: "bg-test text-paper",
     summary: "Save rate strong. Reach weak.",
     metrics: [
       { k: "Save rate", v: "4.8%", tone: "text-mint" },
@@ -18,7 +18,7 @@ const examples = [
   {
     tag: "CAMPAIGN SIGNAL",
     status: "PUSH",
-    statusColor: "bg-mint text-ink",
+    statusColor: "bg-push text-ink",
     summary: "Strong opening, weak follow-through.",
     metrics: [
       { k: "Day 1 peak", v: "1.2M", tone: "text-mint" },
@@ -30,7 +30,7 @@ const examples = [
   {
     tag: "ARTIST HEALTH",
     status: "HOLD",
-    statusColor: "bg-sun text-ink",
+    statusColor: "bg-hold text-ink",
     summary: "Catalogue quiet. New release momentum positive.",
     metrics: [
       { k: "Monthly Δ", v: "+9%", tone: "text-mint" },

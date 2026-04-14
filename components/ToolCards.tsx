@@ -7,7 +7,7 @@ const tools = [
     number: "01",
     title: "Artist & Track Lens",
     tagline:
-      "Drop in messy data. See what's happening — and what to do next.",
+      "Drop in messy CSVs. Get a clear decision. Most teams already have the data — they just don't have a clear read on what it means. This tool removes the interpretation and gives you a next step.",
     href: "/lens",
     inputs: ["Raw Spotify / streaming exports", "Noisy performance signals", "Mixed time windows"],
     outputs: ["Clear health status", "What's actually happening", "What to do next"],
@@ -18,7 +18,7 @@ const tools = [
     number: "02",
     title: "Campaign Timeline",
     tagline:
-      "Every release moment, push and peak on one timeline — so you can see what actually moved the campaign.",
+      "Release activity lives in spreadsheets, calendars, and Slack threads. This tool puts every moment, push, and performance peak on one timeline — so the whole team sees the same picture.",
     href: "https://campaign-timeline-viewer.vercel.app",
     inputs: ["Release moments", "Activity log", "Performance markers"],
     outputs: ["Unified timeline", "Momentum read", "Cadence gaps"],
@@ -30,7 +30,7 @@ const tools = [
     number: "03",
     title: "YouTube Campaign Coach",
     tagline:
-      "Map shorts, premieres and uploads to release moments. Structure, not guesswork.",
+      "YouTube plans often start strong and lose structure by week three. This tool maps shorts, premieres, and uploads to release moments — and flags when cadence drops before the team notices.",
     href: "https://youtube-campaign-coach.vercel.app",
     inputs: ["Release window", "Channel context", "Asset inventory"],
     outputs: ["Posting plan", "Moment mapping", "Priority queue"],
@@ -48,13 +48,18 @@ export default function ToolCards() {
           <div>
             <span className="eyebrow text-ink/60">04 — The Tools</span>
             <h2 className="headline font-display text-5xl md:text-7xl mt-3 max-w-3xl">
-              The tools feeding
+              Three tools.
               <br />
-              <span className="italic font-light">the system.</span>
+              <span className="italic font-light">One workflow.</span>
             </h2>
+            <p className="text-ink/60 text-base md:text-lg leading-relaxed mt-5 max-w-2xl">
+              I built these tools because marketing teams already have data — but
+              no shared way to turn it into decisions.
+            </p>
           </div>
           <p className="hidden md:block max-w-xs text-ink/70 text-sm leading-relaxed">
-            Each tool is live. Each one is an input into the decision.
+            Each tool is live and usable. They share one philosophy — make the
+            next decision obvious.
           </p>
         </div>
 
@@ -132,6 +137,7 @@ export default function ToolCards() {
           })}
         </div>
 
+        {/* Minimal usage footnote — no box, no emphasis */}
         <p className="mt-10 text-xs text-ink/35">
           Used weekly to guide artist, track and campaign decisions.
         </p>

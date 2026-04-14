@@ -2,27 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://music-decision-site.vercel.app"),
-  title: {
-    default: "Decision Systems for Modern Music Teams",
-    template: "%s — Decision System",
-  },
+  title: "Decision Systems for Modern Music Teams",
   description:
     "AI-powered decision tools for modern music marketing. Turn streaming and campaign data into decisions — not dashboards.",
-  openGraph: {
-    title: "Decision Systems for Modern Music Teams",
-    description:
-      "Three tools, one workflow. Turn streaming and campaign data into clear next moves — not dashboards.",
-    type: "website",
-    siteName: "Decision System",
-    url: "https://music-decision-site.vercel.app",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Decision Systems for Modern Music Teams",
-    description:
-      "Three tools, one workflow. Turn streaming and campaign data into clear next moves — not dashboards.",
-  },
 };
 
 export default function RootLayout({
