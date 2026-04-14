@@ -1181,12 +1181,10 @@ export default function CampaignPage() {
       <section className="bg-ink text-paper pt-12 pb-32 md:pt-16 md:pb-44 relative">
         <div className="mx-auto max-w-[1120px] px-6 md:px-10">
           <h1 className="font-display text-4xl md:text-6xl leading-[0.92] font-bold max-w-lg">
-            Inject a campaign.<br />
-            <span className="italic font-light text-signal">Get a call.</span>
+            Inject.<br />
+            <span className="italic font-light text-signal">Decide.</span>
           </h1>
-          <p className="mt-3 text-sm text-paper/55 max-w-sm">Most teams see these signals separately.</p>
-          <p className="mt-1 text-sm text-paper/35 max-w-sm">The money gets spent anyway.</p>
-          <p className="mt-4 font-mono text-[11px] text-paper/40 uppercase tracking-[0.14em] max-w-sm">From scenario to decision — live.</p>
+          <p className="mt-4 font-mono text-[11px] text-paper/40 uppercase tracking-[0.14em] max-w-sm">Real signals. One decision.</p>
         </div>
       </section>
 
