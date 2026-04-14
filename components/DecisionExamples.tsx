@@ -11,7 +11,7 @@ const examples = [
     metrics: [
       { k: "Save rate", v: "4.8%", tone: "text-mint" },
       { k: "Reach (7d)", v: "−18%", tone: "text-signal" },
-      { k: "Skip rate", v: "32%", tone: "text-ink/70" },
+      { k: "Skip rate", v: "32%", tone: "text-paper" },
     ],
     recommendation: "Trial paid reach at low spend. Validate before scaling.",
   },
@@ -34,8 +34,8 @@ const examples = [
     summary: "Catalogue quiet. New release momentum positive.",
     metrics: [
       { k: "Monthly Δ", v: "+9%", tone: "text-mint" },
-      { k: "Catalogue", v: "Flat", tone: "text-ink/70" },
-      { k: "Top market", v: "MX", tone: "text-ink" },
+      { k: "Catalogue", v: "Flat", tone: "text-paper" },
+      { k: "Top market", v: "MX", tone: "text-paper" },
     ],
     recommendation: "Hold catalogue push. Protect the release for 2 weeks.",
   },
@@ -70,7 +70,7 @@ export default function DecisionExamples() {
               className="group rounded-3xl border border-paper/15 bg-paper/5 backdrop-blur-sm p-7 hover:bg-paper/10 hover:border-paper/30 transition-colors"
             >
               <div className="flex items-center justify-between mb-5">
-                <span className="eyebrow text-paper/60">{ex.tag}</span>
+                <span className="eyebrow text-paper/75 font-semibold">{ex.tag}</span>
                 <span
                   className={`${ex.statusColor} text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-full`}
                 >
@@ -78,14 +78,14 @@ export default function DecisionExamples() {
                 </span>
               </div>
 
-              <p className="font-display text-2xl md:text-3xl font-bold leading-tight mb-6">
+              <p className="font-display text-2xl md:text-3xl font-bold leading-tight mb-6 text-paper">
                 {ex.summary}
               </p>
 
-              <div className="grid grid-cols-3 gap-3 mb-6 pt-5 border-t border-paper/15">
+              <div className="grid grid-cols-3 gap-3 mb-6 pt-5 border-t border-paper/25">
                 {ex.metrics.map((m) => (
                   <div key={m.k}>
-                    <div className="text-[10px] uppercase tracking-wider text-paper/50 mb-1">
+                    <div className="text-[10px] uppercase tracking-wider text-paper/70 font-semibold mb-1">
                       {m.k}
                     </div>
                     <div className={`font-display font-bold text-lg ${m.tone}`}>
@@ -95,7 +95,7 @@ export default function DecisionExamples() {
                 ))}
               </div>
 
-              <div className="flex items-start gap-3 text-sm text-paper/85">
+              <div className="flex items-start gap-3 text-[15px] font-medium text-paper/95 pt-4 border-t border-paper/20">
                 <span className="text-signal mt-0.5">→</span>
                 <span className="leading-snug">{ex.recommendation}</span>
               </div>
