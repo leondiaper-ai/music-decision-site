@@ -20,6 +20,10 @@ interface LensOutput {
   why: string;
   actions: string[];
   signals: string[];
+  /** Recent vs prior state — 1 sentence, factual, grounded. */
+  whatChanged: string;
+  /** Forward-looking: the single metric that confirms or flips the call. */
+  nextSignal: string;
 }
 
 /* Artist-level scenarios — overall artist health & momentum */
@@ -41,6 +45,8 @@ const ARTIST_SAMPLES: LensOutput[] = [
       "Follower conversion above genre baseline",
       "Catalogue saves growing across multiple tracks",
     ],
+    whatChanged: "Follower conversion crossed above genre baseline in the last 14 days — the recent lift is new audience, not just replays.",
+    nextSignal: "Watch catalogue saves continuing to grow across multiple tracks — this confirms a full artist-wide expansion, not a single-release spike.",
   },
   {
     filename: "spotify_artist_28d_export_plateau_case.csv",
@@ -59,6 +65,8 @@ const ARTIST_SAMPLES: LensOutput[] = [
       "No new market or playlist breakthroughs",
       "Engagement healthy on existing core audience only",
     ],
+    whatChanged: "Listener growth has flattened over the last 14 days while save rate stays stable — activity is holding, not broadening.",
+    nextSignal: "Look for repeat listening increasing across multiple tracks — this would indicate the audience is starting to expand again.",
   },
   {
     filename: "artist_export_low_reach_high_intent.csv",
@@ -77,6 +85,8 @@ const ARTIST_SAMPLES: LensOutput[] = [
       "Follower velocity above baseline in one key market",
       "Catalogue depth still shallow — needs reinforcement",
     ],
+    whatChanged: "Save rate has climbed for three consecutive weeks, but reach is still confined to a single market.",
+    nextSignal: "Watch for follower velocity rising in a second market — without it, the signal stays contained and scaling is premature.",
   },
 ];
 
@@ -99,6 +109,8 @@ const TRACK_SAMPLES: LensOutput[] = [
       "Reach expanding day-on-day",
       "Listener-to-follower conversion trending up",
     ],
+    whatChanged: "Post-release lift is now stronger than the initial launch spike — reach has expanded day-on-day for the last week.",
+    nextSignal: "Watch listener-to-follower conversion holding past the 14-day mark — this confirms new listeners are sticking, not bouncing.",
   },
   {
     filename: "track_export_weak_followthrough_case.csv",
@@ -117,6 +129,8 @@ const TRACK_SAMPLES: LensOutput[] = [
       "Save rate below baseline",
       "Skip rate rising across playlist placements",
     ],
+    whatChanged: "Streams fell roughly 60% from day one to day three while skip rate climbed on playlist placements — retention is decaying, not building.",
+    nextSignal: "Watch save rate recovering above baseline before any push — retention has to come back first, or extra spend just deepens the fall.",
   },
   {
     filename: "track_export_mixed_signals_v3.csv",
@@ -135,6 +149,8 @@ const TRACK_SAMPLES: LensOutput[] = [
       "Reach flattening after day 3",
       "Growth not broadening beyond core audience",
     ],
+    whatChanged: "Save rate held above baseline but reach flattened after day 3 — the core audience is engaged, new audience isn't showing up.",
+    nextSignal: "Watch reach expanding outside the core audience — without that, any extra spend just deepens the same pocket.",
   },
 ];
 
@@ -597,6 +613,19 @@ export default function LensPage() {
                         </p>
                       </div>
 
+                      {/* WHAT CHANGED — trajectory block, reads before Why */}
+                      {result.whatChanged && (
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="inline-block w-1 h-1 rounded-full bg-ink/40" />
+                            <div className="eyebrow text-ink/30">What changed</div>
+                          </div>
+                          <p className="text-sm md:text-base text-ink/70 leading-relaxed">
+                            {result.whatChanged}
+                          </p>
+                        </div>
+                      )}
+
                       {/* WHY */}
                       <div className="mb-6">
                         <div className="eyebrow text-ink/30 mb-1.5">Why</div>
@@ -631,6 +660,19 @@ export default function LensPage() {
                         </ul>
                       </div>
 
+                      {/* NEXT SIGNAL TO WATCH — forward-looking */}
+                      {result.nextSignal && (
+                        <div className="mt-5 pt-4 border-t border-ink/6">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-ink/40 text-[11px]">→</span>
+                            <div className="eyebrow text-ink/30">Next signal to watch</div>
+                          </div>
+                          <p className="text-sm md:text-[15px] text-ink/70 leading-relaxed">
+                            {result.nextSignal}
+                          </p>
+                        </div>
+                      )}
+
                       {/* AI-ASSISTED PERSPECTIVE — adds shift potential, risk, confidence */}
                       <AIExplainer
                         decision={result.decision}
@@ -638,6 +680,8 @@ export default function LensPage() {
                         signals={result.signals}
                         actions={result.actions}
                         scope={lens}
+                        whatChanged={result.whatChanged}
+                        nextSignal={result.nextSignal}
                       />
 
                       {/* SYSTEM SIGNAL — reinforces that the decision is systematic */}

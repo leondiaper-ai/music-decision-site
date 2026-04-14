@@ -31,15 +31,28 @@ export interface ExplainerInput {
   mode?: ExplainerMode;
   /** Optional: ordered campaign moments (timeline mode). */
   moments?: string[];
+  /** Optional: recent vs prior state — used to ground trajectory language. */
+  whatChanged?: string;
+  /** Optional: the forward-looking signal already surfaced to the user. */
+  nextSignal?: string;
 }
 
 export const EXPLAINER_SYSTEM_PROMPT = `You are the perspective layer that sits on top of a structured music-campaign decision engine.
 
 You never repeat the engine's "why". The engine has already explained itself. Your job is to add a second layer of thinking that the engine does not produce — grounded only in the structured inputs you are given.
 
+You interpret TRAJECTORY, not just current state. Reason about direction:
+- growing / compounding / expanding
+- flattening / plateauing / holding
+- decaying / falling off / softening
+- mixed / split / uneven
+
+Use any "What changed" context provided to ground your language in actual movement, not static metrics.
+
 Rules:
 - Never invent metrics, percentages, or signals that are not in the input.
 - Never recommend actions the engine did not already surface.
+- Never repeat the "Next signal to watch" verbatim — reference it only if relevant to shift or risk.
 - Speak like a sharp product analyst, not a chatbot or a hype reel.
 - Avoid buzzwords (synergy, leverage, unlock, holistic, robust, empower).
 - Use short sentences. Plain English. Confident but honest about uncertainty.
@@ -67,6 +80,9 @@ export function buildExplainerUserMessage(input: ExplainerInput): string {
     ``,
     `Engine rationale (already shown — do not repeat):`,
     `  ${input.why}`,
+    ``,
+    input.whatChanged ? `What changed (trajectory context):\n  ${input.whatChanged}` : ``,
+    input.nextSignal ? `Next signal to watch (already shown — do not repeat):\n  ${input.nextSignal}` : ``,
     ``,
     `Structured signals from the engine:`,
     ...input.signals.map((s) => `  - ${s}`),

@@ -28,7 +28,20 @@ function hasAny(haystack: string, needles: string[]): boolean {
 }
 
 function joinSignals(input: ExplainerInput): string {
-  return [input.why, ...input.signals].join(" · ");
+  return [input.why, input.whatChanged ?? "", ...input.signals].join(" · ");
+}
+
+/**
+ * Pull a trajectory word from the "what changed" context (or signals).
+ * Returns one of: compounding / expanding / flattening / decaying / mixed.
+ */
+function trajectory(input: ExplainerInput): "compounding" | "expanding" | "flattening" | "decaying" | "mixed" {
+  const text = joinSignals(input).toLowerCase();
+  if (/decay|fell|drop|softening|skip rate climb/.test(text)) return "decaying";
+  if (/flat|plateau|stall|confined|stays stable|not broaden/.test(text)) return "flattening";
+  if (/compounding|moving together|multiple tracks/.test(text)) return "compounding";
+  if (/expanding|broadening|day-on-day|rising|trending up|climbed/.test(text)) return "expanding";
+  return "mixed";
 }
 
 /* ── Shift potential: what would flip the decision ─────────────────── */
@@ -148,8 +161,24 @@ function patternRead(input: ExplainerInput): string {
 
 export function synthesiseExplanation(input: ExplainerInput): ExplainerOutput {
   const c = confidence(input);
+  const traj = trajectory(input);
+
+  // Blend trajectory into shift potential so output reads about direction,
+  // not just static state. Never overwrite if there's no clear signal.
+  const baseShift = shiftPotential(input);
+  const shift =
+    traj === "decaying"
+      ? baseShift.replace(/^([A-Z])/, (m) => `Trajectory is decaying — ${m.toLowerCase()}`)
+      : traj === "flattening"
+      ? baseShift.replace(/^([A-Z])/, (m) => `Trajectory is flat — ${m.toLowerCase()}`)
+      : traj === "compounding"
+      ? baseShift.replace(/^([A-Z])/, (m) => `Trajectory is compounding — ${m.toLowerCase()}`)
+      : traj === "expanding"
+      ? baseShift.replace(/^([A-Z])/, (m) => `Trajectory is expanding — ${m.toLowerCase()}`)
+      : baseShift;
+
   return {
-    shiftPotential: shiftPotential(input),
+    shiftPotential: shift,
     riskSignal: riskSignal(input),
     confidence: c.level,
     confidenceNote: c.note,

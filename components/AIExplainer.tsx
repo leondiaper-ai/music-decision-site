@@ -37,6 +37,10 @@ export interface AIExplainerProps {
   mode?: "decision" | "timeline";
   /** Ordered campaign moments, only used in timeline mode. */
   moments?: string[];
+  /** Recent vs prior state — feeds trajectory reasoning. */
+  whatChanged?: string;
+  /** Forward-looking signal already shown to the user. */
+  nextSignal?: string;
 }
 
 function confidenceDot(c: Confidence) {
@@ -53,6 +57,8 @@ export default function AIExplainer({
   scope,
   mode = "decision",
   moments,
+  whatChanged,
+  nextSignal,
 }: AIExplainerProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -66,7 +72,7 @@ export default function AIExplainer({
       const res = await fetch("/api/explain", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ decision, why, signals, actions, scope, mode, moments }),
+        body: JSON.stringify({ decision, why, signals, actions, scope, mode, moments, whatChanged, nextSignal }),
       });
       if (!res.ok) throw new Error("request failed");
       const json = (await res.json()) as ExplainerResponse;
@@ -76,7 +82,7 @@ export default function AIExplainer({
     } finally {
       setLoading(false);
     }
-  }, [decision, why, signals, actions, scope, mode, moments]);
+  }, [decision, why, signals, actions, scope, mode, moments, whatChanged, nextSignal]);
 
   const handleToggle = useCallback(() => {
     const next = !open;

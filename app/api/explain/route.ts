@@ -21,7 +21,7 @@ function parseState(decision: string): ExplainerInput["state"] {
 
 function normalise(body: any): ExplainerInput | null {
   if (!body || typeof body !== "object") return null;
-  const { decision, why, signals, actions, scope, mode, moments } = body;
+  const { decision, why, signals, actions, scope, mode, moments, whatChanged, nextSignal } = body;
   if (typeof decision !== "string" || typeof why !== "string") return null;
   if (!Array.isArray(signals)) return null;
   return {
@@ -37,6 +37,8 @@ function normalise(body: any): ExplainerInput | null {
     moments: Array.isArray(moments)
       ? moments.filter((m): m is string => typeof m === "string").slice(0, 12)
       : undefined,
+    whatChanged: typeof whatChanged === "string" ? whatChanged : undefined,
+    nextSignal: typeof nextSignal === "string" ? nextSignal : undefined,
   };
 }
 

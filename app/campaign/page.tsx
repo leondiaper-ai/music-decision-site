@@ -1288,6 +1288,20 @@ export default function CampaignPage() {
                   confidence adjusted using prior campaign outcomes
                 </p>
 
+                {/* WHAT CHANGED — single trajectory line specific to this scenario */}
+                {activeScenario && (
+                  <div className="mb-4 mx-auto max-w-[480px] text-center">
+                    <div className="eyebrow text-ink/30 mb-1.5">What changed</div>
+                    <p className="text-[13px] text-ink/65 leading-relaxed">
+                      {output.decision === "PUSH"
+                        ? "Culture signal and velocity moved together over the last cycle — the lift is broad, not single-source."
+                        : output.decision === "TEST"
+                        ? "Early save curve is forming, but reach has not broadened beyond the initial segment."
+                        : "Catalogue engagement is holding, but no new market or cohort has started to pull."}
+                    </p>
+                  </div>
+                )}
+
                 {/* AI pattern read — layered on top of structured campaign signals */}
                 <div className="mb-6">
                   <AIExplainer
@@ -1307,6 +1321,13 @@ export default function CampaignPage() {
                       activeScenario?.hint ?? "",
                       `deployment · ${output.deployment}`,
                     ].filter(Boolean)}
+                    whatChanged={
+                      output.decision === "PUSH"
+                        ? "Culture signal and velocity moved together over the last cycle."
+                        : output.decision === "TEST"
+                        ? "Save curve is forming early, but reach hasn't broadened."
+                        : "Catalogue engagement is holding, but no new market pull."
+                    }
                   />
                 </div>
 
