@@ -967,7 +967,6 @@ interface Scenario {
   situation: string;
   context: string;
   hint: string;
-  likelyDecision: Decision;
   input: CampaignInput;
   lens: LensData;
 }
@@ -976,8 +975,7 @@ const SCENARIOS: Scenario[] = [
   {
     situation: "A breaking artist just spiked.",
     context: "340k monthly · TikTok inflection · $15k available",
-    hint: "culture says yes. signal says momentum. decide now.",
-    likelyDecision: "PUSH",
+    hint: "culture accelerating. velocity climbing. audience catching.",
     input: { trackName: "Midnight Drive", artistStage: "breaking", budget: 30 },
     lens: {
       artistLabel: "Audience — rising listeners, high velocity",
@@ -990,8 +988,7 @@ const SCENARIOS: Scenario[] = [
   {
     situation: "A major release drops Friday.",
     context: "2.1M monthly · established catalog · $35k planned",
-    hint: "known cohort. capital-heavy. deploy with conviction.",
-    likelyDecision: "PUSH",
+    hint: "established cohort. catalogue gravity stable. spend primed.",
     input: { trackName: "Cathedral", artistStage: "established", budget: 70 },
     lens: {
       artistLabel: "Audience — established listeners, stable velocity",
@@ -1004,8 +1001,7 @@ const SCENARIOS: Scenario[] = [
   {
     situation: "An emerging artist caught first traction.",
     context: "12k monthly · early save curve · $3k ceiling",
-    hint: "signal is soft. test before you commit capital.",
-    likelyDecision: "TEST",
+    hint: "save curve early. velocity unproven. capital limited.",
     input: { trackName: "Bedroom Floor", artistStage: "emerging", budget: 5 },
     lens: {
       artistLabel: "Audience — early listeners, building save rate",
@@ -1229,36 +1225,27 @@ export default function CampaignPage() {
                   <p className="font-mono text-[10px] text-ink/25">the system will respond</p>
                 </div>
                 <div className="flex flex-col gap-2.5">
-                  {SCENARIOS.map((sc) => {
-                    const dotClr = sc.likelyDecision === "PUSH" ? "bg-signal" : sc.likelyDecision === "TEST" ? "bg-sun" : "bg-electric";
-                    const txtClr = sc.likelyDecision === "PUSH" ? "text-signal" : sc.likelyDecision === "TEST" ? "text-sun" : "text-electric";
-                    return (
-                      <button
-                        key={sc.situation}
-                        onClick={() => launch(sc)}
-                        className="group w-full text-left rounded-xl border border-ink/8 hover:border-ink/25 bg-paper px-5 py-4 transition-all hover:translate-x-[2px]"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`w-1.5 h-1.5 rounded-full ${dotClr}`} />
-                              <span className="text-[15px] font-medium text-ink/80 group-hover:text-ink transition-colors">{sc.situation}</span>
-                            </div>
-                            <div className="font-mono text-[10.5px] text-ink/35 ml-[14px]">{sc.context}</div>
-                            <div className="font-mono text-[10.5px] text-ink/45 ml-[14px] mt-1.5 italic">
-                              <span className="text-ink/30">// </span>{sc.hint}
-                            </div>
+                  {SCENARIOS.map((sc) => (
+                    <button
+                      key={sc.situation}
+                      onClick={() => launch(sc)}
+                      className="group w-full text-left rounded-xl border border-ink/8 hover:border-ink/25 bg-paper px-5 py-4 transition-all hover:translate-x-[2px]"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-ink/25 group-hover:bg-ink/50 transition-colors" />
+                            <span className="text-[15px] font-medium text-ink/80 group-hover:text-ink transition-colors">{sc.situation}</span>
                           </div>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            <span className={`font-mono text-[10px] ${txtClr} opacity-60 group-hover:opacity-100 transition-opacity`}>
-                              likely {sc.likelyDecision}
-                            </span>
-                            <span className="text-ink/15 group-hover:text-ink/60 transition-all text-sm group-hover:translate-x-0.5">inject →</span>
+                          <div className="font-mono text-[10.5px] text-ink/35 ml-[14px]">{sc.context}</div>
+                          <div className="font-mono text-[10.5px] text-ink/45 ml-[14px] mt-1.5 italic">
+                            <span className="text-ink/30">// </span>{sc.hint}
                           </div>
                         </div>
-                      </button>
-                    );
-                  })}
+                        <span className="shrink-0 self-center text-ink/15 group-hover:text-ink/60 transition-all text-sm group-hover:translate-x-0.5">inject →</span>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </motion.div>
             )}
