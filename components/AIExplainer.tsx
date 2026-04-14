@@ -21,9 +21,9 @@ type Confidence = "High" | "Medium" | "Low";
 
 interface ExplainerResponse {
   systemStance: string;
-  aiPerspective: string;
-  watchFor: string;
-  ifTriggered: string;
+  aiRead: string;
+  watch: string;
+  ifConfirmed: string;
   confidence: Confidence;
   confidenceNote: string;
   source?: "model" | "synth";
@@ -165,9 +165,9 @@ export default function AIExplainer({
                   className="space-y-4"
                 >
                   {data.systemStance && <Block label="System stance" body={data.systemStance} />}
-                  <Block label="AI Perspective" body={data.aiPerspective} />
-                  <Block label="Watch for" body={data.watchFor} />
-                  <Block label="If triggered" body={data.ifTriggered} />
+                  <Block label="AI Read" body={data.aiRead} />
+                  <Block label="Watch" body={data.watch} />
+                  <Block label="If confirmed" body={data.ifConfirmed} />
 
                   {/* Confidence */}
                   <div className="pt-4 border-t border-ink/6 flex flex-wrap items-center gap-x-5 gap-y-2">

@@ -65,12 +65,12 @@ async function callAnthropic(input: ExplainerInput, key: string): Promise<Explai
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return null;
     const parsed = JSON.parse(match[0]);
-    if (typeof parsed.aiPerspective !== "string" || typeof parsed.watchFor !== "string" || typeof parsed.ifTriggered !== "string") return null;
+    if (typeof parsed.aiRead !== "string" || typeof parsed.watch !== "string" || typeof parsed.ifConfirmed !== "string") return null;
     return {
       systemStance: typeof parsed.systemStance === "string" ? parsed.systemStance : "",
-      aiPerspective: parsed.aiPerspective,
-      watchFor: parsed.watchFor,
-      ifTriggered: parsed.ifTriggered,
+      aiRead: parsed.aiRead,
+      watch: parsed.watch,
+      ifConfirmed: parsed.ifConfirmed,
       confidence: ["High", "Medium", "Low"].includes(parsed.confidence) ? parsed.confidence : "Medium",
       confidenceNote: typeof parsed.confidenceNote === "string" ? parsed.confidenceNote : "",
     };

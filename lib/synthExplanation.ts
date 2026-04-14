@@ -11,9 +11,9 @@ import type { ExplainerInput } from "./explainerPrompt";
 
 export interface ExplainerOutput {
   systemStance: string;
-  aiPerspective: string;
-  watchFor: string;
-  ifTriggered: string;
+  aiRead: string;
+  watch: string;
+  ifConfirmed: string;
   confidence: "High" | "Medium" | "Low";
   confidenceNote: string;
 }
@@ -66,7 +66,7 @@ function systemStance(input: ExplainerInput): string {
 
 /* ── aiPerspective ───────────────────────────────────────────────────── */
 
-function aiPerspectiveDecision(input: ExplainerInput, traj: Trajectory): string {
+function aiReadDecision(input: ExplainerInput, traj: Trajectory): string {
   const text = joinSignals(input);
   const scope = input.scope ?? "artist";
   const scopeWord = scope === "track" ? "track" : scope === "campaign" ? "campaign" : scope === "youtube" ? "channel" : "artist";
@@ -96,7 +96,7 @@ function aiPerspectiveDecision(input: ExplainerInput, traj: Trajectory): string 
   }
 }
 
-function aiPerspectiveTimeline(input: ExplainerInput): string {
+function aiReadTimeline(input: ExplainerInput): string {
   const text = joinSignals(input);
   const moments = (input.moments ?? []).join(" ");
   const all = `${text} ${moments}`.toLowerCase();
@@ -121,7 +121,7 @@ function aiPerspectiveTimeline(input: ExplainerInput): string {
 
 /* ── watchFor ────────────────────────────────────────────────────────── */
 
-function watchFor(input: ExplainerInput): string {
+function watch(input: ExplainerInput): string {
   const text = joinSignals(input);
   const mentionsSave = hasAny(text, ["save rate", "saves"]);
   const mentionsRetention = hasAny(text, ["retention", "skip", "day 3", "day-three", "follow-through"]);
@@ -153,7 +153,7 @@ function watchFor(input: ExplainerInput): string {
 
 /* ── ifTriggered ─────────────────────────────────────────────────────── */
 
-function ifTriggered(input: ExplainerInput): string {
+function ifConfirmed(input: ExplainerInput): string {
   switch (input.state) {
     case "HOLD":
       return "Shift from hold to test with targeted spend or a broader content push on the strongest segment.";
@@ -199,9 +199,9 @@ export function synthesiseExplanation(input: ExplainerInput): ExplainerOutput {
 
   return {
     systemStance: systemStance(input),
-    aiPerspective: mode === "timeline" ? aiPerspectiveTimeline(input) : aiPerspectiveDecision(input, traj),
-    watchFor: watchFor(input),
-    ifTriggered: ifTriggered(input),
+    aiRead: mode === "timeline" ? aiReadTimeline(input) : aiReadDecision(input, traj),
+    watch: watch(input),
+    ifConfirmed: ifConfirmed(input),
     confidence: c.level,
     confidenceNote: c.note,
   };
