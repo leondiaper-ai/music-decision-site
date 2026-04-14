@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import AIExplainer from "@/components/AIExplainer";
 import MarketingAction, { type MarketingState } from "@/components/MarketingAction";
 
 function parseMarketingState(decision: string): MarketingState {
@@ -1321,35 +1320,6 @@ export default function CampaignPage() {
                         : output.decision === "TEST"
                         ? "Save rate holds above baseline through the next release window."
                         : "One signal — save rate, reach or retention — moves above baseline for two reporting weeks."
-                    }
-                  />
-                </div>
-
-                {/* AI pattern read — layered on top of structured campaign signals */}
-                <div className="mb-6">
-                  <AIExplainer
-                    mode="timeline"
-                    scope="campaign"
-                    decision={output.decision}
-                    why={activeScenario?.lens?.reasoning ?? activeScenario?.hint ?? ""}
-                    signals={[
-                      activeScenario?.context ?? "",
-                      activeScenario?.lens?.catalogueDepth ?? "",
-                      activeScenario?.lens?.trackFingerprint ?? "",
-                      activeScenario?.lens?.artistLabel ?? "",
-                      `projected outcome · ${output.outcome}`,
-                    ].filter(Boolean)}
-                    moments={[
-                      activeScenario?.situation ?? "",
-                      activeScenario?.hint ?? "",
-                      `deployment · ${output.deployment}`,
-                    ].filter(Boolean)}
-                    whatChanged={
-                      output.decision === "PUSH"
-                        ? "Culture signal and velocity moved together over the last cycle."
-                        : output.decision === "TEST"
-                        ? "Save curve is forming early, but reach hasn't broadened."
-                        : "Catalogue engagement is holding, but no new market pull."
                     }
                   />
                 </div>

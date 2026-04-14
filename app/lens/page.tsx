@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import AIExplainer from "@/components/AIExplainer";
 import MarketingAction, { type MarketingState } from "@/components/MarketingAction";
 
 function parseMarketingState(decision: string): MarketingState {
@@ -686,17 +685,6 @@ export default function LensPage() {
                       <MarketingAction
                         state={parseMarketingState(result.decision)}
                         watch={result.nextSignal}
-                      />
-
-                      {/* AI-ASSISTED PERSPECTIVE — adds shift potential, risk, confidence */}
-                      <AIExplainer
-                        decision={result.decision}
-                        why={result.why}
-                        signals={result.signals}
-                        actions={result.actions}
-                        scope={lens}
-                        whatChanged={result.whatChanged}
-                        nextSignal={result.nextSignal}
                       />
 
                       {/* SYSTEM SIGNAL — reinforces that the decision is systematic */}
