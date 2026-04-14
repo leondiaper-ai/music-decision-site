@@ -7,37 +7,40 @@ const examples = [
     tag: "TRACK STATUS",
     status: "TEST",
     statusColor: "bg-test text-paper",
-    summary: "Save rate strong. Reach weak.",
+    summary: "Saves are strong. Reach isn't catching.",
     metrics: [
       { k: "Save rate", v: "4.8%", tone: "text-mint" },
       { k: "Reach (7d)", v: "−18%", tone: "text-signal" },
       { k: "Skip rate", v: "32%", tone: "text-paper" },
     ],
-    recommendation: "Trial paid reach at low spend. Validate before scaling.",
+    recommendation: "Low-spend paid reach test. Don't scale until reach clears baseline.",
+    consequence: "Stops a full push against a signal that hasn't radiated yet.",
   },
   {
     tag: "CAMPAIGN SIGNAL",
     status: "PUSH",
     statusColor: "bg-push text-ink",
-    summary: "Strong opening, weak follow-through.",
+    summary: "Opening landed. Momentum is leaking by day three.",
     metrics: [
       { k: "Day 1 peak", v: "1.2M", tone: "text-mint" },
       { k: "Day 3 drop", v: "−61%", tone: "text-signal" },
       { k: "Retention", v: "Low", tone: "text-signal" },
     ],
-    recommendation: "Accelerate cadence. Add day-4 and day-7 moments.",
+    recommendation: "Cadence intervention. Ship day-4 and day-7 moments this week.",
+    consequence: "Without a second push, the opening spend is paying for a one-day spike.",
   },
   {
     tag: "ARTIST HEALTH",
     status: "HOLD",
     statusColor: "bg-hold text-ink",
-    summary: "Catalogue quiet. New release momentum positive.",
+    summary: "Catalogue is flat. The new release is carrying everything.",
     metrics: [
       { k: "Monthly Δ", v: "+9%", tone: "text-mint" },
       { k: "Catalogue", v: "Flat", tone: "text-paper" },
       { k: "Top market", v: "MX", tone: "text-paper" },
     ],
-    recommendation: "Hold catalogue push. Protect the release for 2 weeks.",
+    recommendation: "Pull catalogue spend. Protect the release window for two weeks.",
+    consequence: "Spending into the base right now teaches the wrong lesson about what's working.",
   },
 ];
 
@@ -55,7 +58,7 @@ export default function DecisionExamples() {
             </h2>
           </div>
           <p className="hidden md:block max-w-xs text-paper/70 text-sm leading-relaxed">
-            These are the outputs teams actually act on.
+            Most campaigns spend before they understand what&rsquo;s actually happening. These are the calls that replace that.
           </p>
         </div>
 
@@ -95,9 +98,14 @@ export default function DecisionExamples() {
                 ))}
               </div>
 
-              <div className="flex items-start gap-3 text-[15px] font-medium text-paper/95 pt-4 border-t border-paper/20">
-                <span className="text-signal mt-0.5">→</span>
-                <span className="leading-snug">{ex.recommendation}</span>
+              <div className="pt-4 border-t border-paper/20 space-y-2">
+                <div className="flex items-start gap-3 text-[15px] font-medium text-paper/95">
+                  <span className="text-signal mt-0.5">→</span>
+                  <span className="leading-snug">{ex.recommendation}</span>
+                </div>
+                <p className="pl-6 text-[12px] leading-snug text-paper/55 italic">
+                  {ex.consequence}
+                </p>
               </div>
             </motion.article>
           ))}

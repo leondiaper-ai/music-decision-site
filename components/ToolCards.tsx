@@ -57,7 +57,7 @@ export default function ToolCards() {
             </h2>
           </div>
           <p className="hidden md:block max-w-xs text-ink/70 text-sm leading-relaxed">
-            Each tool is live. Each one is a signal input the decision engine interprets.
+            The inputs are messy. Signals conflict. There&rsquo;s rarely a clean answer. The system resolves that — into one call.
           </p>
         </div>
 
@@ -137,7 +137,7 @@ export default function ToolCards() {
         </div>
 
         <p className="mt-10 text-xs text-ink/35">
-          Used weekly to guide artist, track and campaign decisions.
+          Three inputs. One decision. The messy middle collapses into a call.
         </p>
       </div>
     </section>

@@ -43,13 +43,13 @@ export default function Hero() {
             className="md:col-span-7 max-w-xl"
           >
             <p className="text-lg md:text-xl leading-snug text-ink/80">
-              Signal, culture, audience and spend — combined into one decision.
+              Teams already have the data. They still don&rsquo;t know what to move.
             </p>
             <p className="mt-3 text-sm md:text-base text-ink/55">
-              Not dashboards. Direction.
+              So spend happens anyway. This replaces the guess with a call.
             </p>
             <p className="mt-5 text-[12px] md:text-[13px] text-ink/40 leading-snug max-w-lg">
-              Structured decision engine with AI-assisted interpretation — built to evolve toward agent-assisted workflows.
+              A decision engine for music marketing — signal in, action out. Not another dashboard.
             </p>
           </motion.div>
 

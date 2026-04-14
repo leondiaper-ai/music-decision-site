@@ -4,16 +4,16 @@ import { motion } from "framer-motion";
 
 const points = [
   {
-    k: "Built around workflows",
-    v: "Designed from how music teams actually work — releases, pushes, catalogue, content.",
+    k: "Data isn't the bottleneck.",
+    v: "Teams have more dashboards than ever. The week still ends without a clear answer on what actually moved.",
   },
   {
-    k: "For commercial & marketing",
-    v: "Not a data science toy. Built for the people making day-to-day calls.",
+    k: "Budgets deploy anyway.",
+    v: "Spend gets committed before anyone can explain what's working. That's the real cost of unclear decisions.",
   },
   {
-    k: "Decisions, not dashboards",
-    v: "Every screen should answer: what do we do next — and why.",
+    k: "Clarity is the product.",
+    v: "Every screen here answers one question: what do we do next — and what would change that call.",
   },
 ];
 
@@ -35,8 +35,8 @@ export default function WhySection() {
 
           <div className="md:col-span-7 md:pl-10">
             <p className="text-lg md:text-xl text-ink/80 leading-snug mb-10 max-w-xl">
-              Teams already have data. What they don't have is a clear next
-              move.
+              Teams don't lack data. They lack clarity. And budget still gets
+              deployed — every week — against signals no one can fully explain.
             </p>
 
             <div className="divide-y divide-ink/15 border-y border-ink/15">
