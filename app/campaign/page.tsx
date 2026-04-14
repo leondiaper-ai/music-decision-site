@@ -563,7 +563,7 @@ function SystemMap({ state, compact, displayConfidence, mode, output }: {
               {/* Divider */}
               <line x1={px + 22} y1={py + (compact ? 88 : 106)} x2={px + pw - 22} y2={py + (compact ? 88 : 106)} stroke="#FAF7F2" strokeOpacity={0.08} />
               {/* Deployment */}
-              <text x={px + 22} y={py + (compact ? 104 : 124)} className="text-[9px] font-mono uppercase tracking-[0.14em]" fill="#FAF7F2" opacity={0.35}>capital deployment</text>
+              <text x={px + 22} y={py + (compact ? 104 : 124)} className="text-[9px] font-mono uppercase tracking-[0.14em]" fill="#FAF7F2" opacity={0.35}>impact</text>
               <text x={px + 22} y={py + (compact ? 118 : 140)} className={`${compact ? "text-[11px]" : "text-[12px]"} font-mono`} fill="#FAF7F2" opacity={0.8}>
                 {output.deployment}
               </text>
@@ -1172,8 +1172,9 @@ export default function CampaignPage() {
             One system.<br />
             <span className="italic font-light text-signal">Every decision.</span>
           </h1>
-          <p className="mt-3 text-sm text-paper/25 max-w-sm">Signal, culture, audience, memory. Connected. Continuous.</p>
-          <p className="mt-1.5 font-mono text-[11px] text-paper/18 max-w-sm">Each campaign makes it sharper.</p>
+          <p className="mt-3 text-sm text-paper/55 max-w-sm">Most teams see these signals separately.</p>
+          <p className="mt-1 text-sm text-paper/35 max-w-sm">The money gets spent anyway.</p>
+          <p className="mt-4 font-mono text-[11px] text-paper/40 uppercase tracking-[0.14em] max-w-sm">Messy inputs. One call.</p>
         </div>
       </section>
 
@@ -1281,8 +1282,8 @@ export default function CampaignPage() {
                 className="max-w-[640px] mx-auto"
               >
                 <div className="flex items-baseline justify-between mb-5">
-                  <p className="font-mono text-[11px] text-ink/40 uppercase tracking-[0.12em]">Inject a scenario</p>
-                  <p className="font-mono text-[10px] text-ink/25">the system will respond</p>
+                  <p className="font-mono text-[11px] text-ink/40 uppercase tracking-[0.12em]">Inject a messy scenario → one clear call</p>
+                  <p className="font-mono text-[10px] text-ink/25">the system resolves it</p>
                 </div>
                 <div className="flex flex-col gap-2.5">
                   {SCENARIOS.map((sc) => (
@@ -1385,7 +1386,7 @@ function NorthStarIntelligence({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-label={open ? "Hide intelligence" : "Open intelligence"}
+        aria-label={open ? "Hide reasoning" : "Why this decision"}
         className="group relative inline-flex items-center gap-2.5 rounded-full border border-ink/15 bg-paper px-4 py-2 text-[11.5px] font-mono uppercase tracking-[0.14em] text-ink/70 shadow-[0_6px_18px_rgba(14,14,14,0.08)] hover:border-ink/30 hover:shadow-[0_8px_22px_rgba(14,14,14,0.12)] transition-all"
       >
         <span className="relative inline-flex items-center justify-center">
@@ -1422,7 +1423,7 @@ function NorthStarIntelligence({
             AI
           </span>
         </span>
-        <span>{open ? "Hide intelligence" : "Open intelligence"}</span>
+        <span>{open ? "Hide reasoning" : "Why this decision"}</span>
         <span className={`text-ink/40 text-[10px] transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
       </button>
 
