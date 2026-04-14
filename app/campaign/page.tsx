@@ -1194,12 +1194,6 @@ export default function CampaignPage() {
           decision + intelligence layer anchor directly beneath the map so
           injection → decision → reasoning happens in one zone. */}
       <section className="mx-auto max-w-[1120px] px-4 md:px-8 -mt-28 md:-mt-40 relative z-10">
-        {isAmbient && (
-          <div className="max-w-[680px] mx-auto mb-4 md:mb-6 px-2 flex items-baseline justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink/30">Setup · inputs teams already have</span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink/25">waiting for a call</span>
-          </div>
-        )}
         <SystemMap
           state={currentState}
           displayConfidence={displayConfidence}
@@ -1225,7 +1219,7 @@ export default function CampaignPage() {
               <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/40 text-center">
                 This is the call teams act on · budget deployed with direction
               </p>
-              <NorthStarIntelligence output={output} onReset={reset} />
+              <NorthStarIntelligence output={output} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1293,7 +1287,7 @@ export default function CampaignPage() {
       <section className="mx-auto max-w-[960px] px-6 md:px-10 pb-20 md:pb-28">
         <div className="border-t border-ink/6 pt-10">
           <AnimatePresence mode="wait">
-            {isAmbient && (
+            {!isEvaluating && (
               <motion.div
                 key="scenarios"
                 initial={{ opacity: 0 }}
@@ -1303,20 +1297,27 @@ export default function CampaignPage() {
                 className="max-w-[640px] mx-auto"
               >
                 <div className="flex items-baseline justify-between mb-5">
-                  <p className="font-mono text-[11px] text-ink/55 uppercase tracking-[0.12em]">Run a real scenario</p>
-                  <p className="font-mono text-[10px] text-ink/30">this is where the system proves itself</p>
+                  <p className="font-mono text-[11px] text-ink/55 uppercase tracking-[0.12em]">Run another scenario</p>
+                  <p className="font-mono text-[10px] text-ink/30">live update — same page</p>
                 </div>
                 <div className="flex flex-col gap-2.5">
-                  {SCENARIOS.map((sc) => (
+                  {SCENARIOS.map((sc) => {
+                    const isActive = activeScenario?.situation === sc.situation;
+                    return (
                     <button
                       key={sc.situation}
                       onClick={() => launch(sc)}
-                      className="group w-full text-left rounded-xl border border-ink/8 hover:border-ink/25 bg-paper px-5 py-4 transition-all hover:translate-x-[2px]"
+                      disabled={isActive}
+                      className={`group w-full text-left rounded-xl border px-5 py-4 transition-all ${
+                        isActive
+                          ? "border-ink/25 bg-ink/[0.04] cursor-default"
+                          : "border-ink/8 hover:border-ink/25 bg-paper hover:translate-x-[2px]"
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-ink/25 group-hover:bg-ink/50 transition-colors" />
+                            <span className={`w-1.5 h-1.5 rounded-full transition-colors ${isActive ? "bg-signal" : "bg-ink/25 group-hover:bg-ink/50"}`} />
                             <span className="text-[15px] font-medium text-ink/80 group-hover:text-ink transition-colors">{sc.situation}</span>
                           </div>
                           <div className="font-mono text-[10.5px] text-ink/35 ml-[14px]">{sc.context}</div>
@@ -1324,10 +1325,13 @@ export default function CampaignPage() {
                             <span className="text-ink/30">// </span>{sc.hint}
                           </div>
                         </div>
-                        <span className="shrink-0 self-center text-ink/15 group-hover:text-ink/60 transition-all text-sm group-hover:translate-x-0.5">inject →</span>
+                        <span className={`shrink-0 self-center text-sm transition-all ${isActive ? "text-signal" : "text-ink/15 group-hover:text-ink/60 group-hover:translate-x-0.5"}`}>
+                          {isActive ? "active" : "inject →"}
+                        </span>
                       </div>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -1361,10 +1365,8 @@ export default function CampaignPage() {
    System 1 lives on the node. System 2 lives here, on demand. */
 function NorthStarIntelligence({
   output,
-  onReset,
 }: {
   output: SystemOutput;
-  onReset: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [justResolved, setJustResolved] = useState(true);
@@ -1472,28 +1474,10 @@ function NorthStarIntelligence({
                   <p className="text-[13.5px] leading-snug text-ink/85">{body}</p>
                 </div>
               ))}
-              <div className="pt-3 mt-1 border-t border-ink/6 flex justify-end">
-                <button
-                  onClick={onReset}
-                  className="group inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-3.5 py-1.5 text-[11px] font-mono font-medium hover:bg-ink hover:text-paper transition-colors"
-                >
-                  <span className="group-hover:-translate-x-0.5 transition-transform">↺</span> Inject another
-                </button>
-              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Compact reset when panel is closed — keeps the interaction tight */}
-      {!open && (
-        <button
-          onClick={onReset}
-          className="mt-3 text-[10.5px] font-mono uppercase tracking-[0.14em] text-ink/35 hover:text-ink/70 transition-colors"
-        >
-          ↺ Inject another scenario
-        </button>
-      )}
     </div>
   );
 }
