@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import DecisionIntelligence, { type Intelligence } from "@/components/DecisionIntelligence";
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -1287,38 +1288,55 @@ export default function CampaignPage() {
                   confidence adjusted using prior campaign outcomes
                 </p>
 
-                {/* Unified decision detail: Why / What to do / What would change this */}
-                <div className="mx-auto max-w-[520px] space-y-4 mb-5">
-                  <div>
-                    <div className="eyebrow text-ink/30 mb-1.5">Why this decision</div>
-                    <p className="text-[13.5px] text-ink/75 leading-relaxed">
-                      {output.decision === "PUSH"
-                        ? "Culture and velocity moved together — the lift is broad, not single-source, so momentum is real enough to back."
-                        : output.decision === "TEST"
-                        ? "The save curve is forming, but reach has not broadened past the initial segment — validate before committing."
-                        : "Catalogue engagement is holding, but no new cohort has started to pull — there is nothing yet to spend into."}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="eyebrow text-ink/30 mb-1.5">What to do now</div>
-                    <p className="text-[13.5px] text-ink/85 leading-relaxed font-medium">
-                      {output.decision === "PUSH"
-                        ? "Scale paid and editorial support around the working moment while behaviour remains elevated."
-                        : output.decision === "TEST"
-                        ? "Run a contained test against the responsive segment — no broad commitment yet."
-                        : "Hold spend and protect the base — wait for one signal to separate."}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="eyebrow text-ink/30 mb-1.5">What would change this</div>
-                    <p className="text-[13.5px] text-ink/70 leading-relaxed">
-                      {output.decision === "PUSH"
-                        ? "Streams falling back to the prior baseline inside 7–10 days."
-                        : output.decision === "TEST"
-                        ? "Save rate holding above baseline through the next release window."
-                        : "One signal — save rate, reach or retention — clearing baseline for two reporting weeks."}
-                    </p>
-                  </div>
+                {/* System 1 / System 2 — scenario decision with collapsible intelligence */}
+                <div className="mx-auto max-w-[540px] mb-5">
+                  {(() => {
+                    const d = output.decision;
+                    const decisionColor =
+                      d === "PUSH" ? "text-signal" : d === "TEST" ? "text-electric" : "text-warning";
+                    const intel: Intelligence = {
+                      decision: d,
+                      decisionColor,
+                      why:
+                        d === "PUSH"
+                          ? "Culture and velocity moved together — momentum is broad, not single-source."
+                          : d === "TEST"
+                          ? "A save curve is forming, but reach has not broadened past the initial segment."
+                          : "Catalogue is holding, but no new cohort has started to pull.",
+                      doNow:
+                        d === "PUSH"
+                          ? "Scale support around the working moment while behaviour stays elevated."
+                          : d === "TEST"
+                          ? "Run a contained test against the responsive segment — no broad commitment yet."
+                          : "Hold spend and protect the base — wait for one signal to separate.",
+                      aiRead:
+                        d === "PUSH"
+                          ? "Save rate, reach and retention are lifting together — the shape reads as sustained, not a single-metric spike."
+                          : d === "TEST"
+                          ? "Early conversion is live but narrow — the lift is real in one segment and hasn't radiated yet."
+                          : "Engagement is stable at the base — nothing fresh is pulling, so there is no cohort to spend into.",
+                      spendLogic:
+                        d === "PUSH"
+                          ? `Allocate against the working moment — concentrated paid + editorial; confidence elevated by ${output.confidence}% projection.`
+                          : d === "TEST"
+                          ? "Controlled test spend against the responsive segment — scale only once reach broadens."
+                          : "Hold spend. Any capital here teaches the wrong lesson about the base.",
+                      watch:
+                        d === "PUSH"
+                          ? "Whether streams hold above the new baseline for 7–10 days."
+                          : d === "TEST"
+                          ? "Save rate holding above baseline through the next release window."
+                          : "One signal — save rate, reach or retention — clearing baseline for two reporting weeks.",
+                      ifConfirmed:
+                        d === "PUSH"
+                          ? "Extend reach and move from backing momentum to scaling it across adjacent cohorts."
+                          : d === "TEST"
+                          ? "Shift from test to push — commit support to the format the signal validated."
+                          : "Move to a contained test on the format starting to separate.",
+                      signalLine: `projected ${output.outcome}`,
+                    };
+                    return <DecisionIntelligence data={intel} theme="paper" scope="Scenario result" />;
+                  })()}
                 </div>
 
                 <div className="flex justify-center gap-3">

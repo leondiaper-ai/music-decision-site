@@ -3,6 +3,19 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import DecisionIntelligence, { type Intelligence } from "@/components/DecisionIntelligence";
+
+function ifConfirmedFor(decision: string): string {
+  const d = decision.toUpperCase();
+  if (d.startsWith("PUSH"))
+    return "Extend reach against the working segment — move from backing momentum to scaling it.";
+  if (d.startsWith("TEST"))
+    return "Shift from test to push — commit support to the format the signal validated.";
+  if (d.startsWith("HOLD"))
+    return "Move to test — run a contained push on the format starting to separate.";
+  return "Recommendation tightens once the watched signal confirms.";
+}
+
 const FULL_TOOL_URL = "https://pih-v2.vercel.app/label";
 
 /* ── Data model ────────────────────────────────────────────── */
@@ -600,52 +613,28 @@ export default function LensPage() {
                       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                       className="flex-1 rounded-2xl border border-ink/10 bg-cream p-7 md:p-9 flex flex-col"
                     >
-                      {/* DECISION */}
-                      <div className="mb-6 pb-6 border-b border-ink/8">
-                        <div className="eyebrow text-ink/30 mb-2">Decision</div>
-                        <div className={`font-display font-black text-3xl md:text-4xl leading-tight tracking-tight ${result.decisionColor}`}>
-                          {result.decision}
-                        </div>
-                      </div>
-
-                      {/* WHY THIS DECISION — merged trajectory + reasoning */}
-                      <div className="mb-6">
-                        <div className="eyebrow text-ink/30 mb-1.5">Why this decision</div>
-                        <p className="text-sm md:text-base text-ink/75 leading-relaxed">
-                          {result.whatChanged ? `${result.whatChanged} ${result.why}` : result.why}
-                        </p>
-                      </div>
-
-                      {/* WHAT TO DO NOW */}
-                      <div className="mb-6">
-                        <div className="eyebrow text-ink/30 mb-2">What to do now</div>
-                        <ul className="space-y-1.5">
-                          {result.actions.slice(0, 3).map((action) => (
-                            <li key={action} className="flex items-start gap-2 text-sm md:text-base text-ink/85 leading-relaxed font-medium">
-                              <span className="text-signal mt-0.5 shrink-0">→</span>
-                              {action}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* WHAT WOULD CHANGE THIS */}
-                      {result.nextSignal && (
-                        <div className="mb-5">
-                          <div className="eyebrow text-ink/30 mb-1.5">What would change this</div>
-                          <p className="text-sm md:text-[15px] text-ink/70 leading-relaxed">
-                            {result.nextSignal}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* SIGNALS — single line */}
-                      {result.signals.length > 0 && (
-                        <p className="pt-4 border-t border-ink/6 text-[12px] text-ink/40 leading-snug">
-                          <span className="eyebrow text-ink/25 mr-2">Signals</span>
-                          {result.signals.slice(0, 3).join(" · ")}
-                        </p>
-                      )}
+                      {/* System 1 / System 2 — decision + collapsible intelligence */}
+                      {(() => {
+                        const intel: Intelligence = {
+                          decision: result.decision,
+                          decisionColor: result.decisionColor,
+                          why: result.why,
+                          doNow: result.actions[0] ?? "Hold — wait for a clearer signal.",
+                          aiRead:
+                            result.whatChanged ??
+                            "The system reads the trajectory as consistent with the current decision — no fresh divergence in the signal shape.",
+                          watch: result.nextSignal ?? "One signal moving clearly above baseline for two reporting weeks.",
+                          ifConfirmed: ifConfirmedFor(result.decision),
+                          signalLine: result.signals.slice(0, 3).join(" · ") || undefined,
+                        };
+                        return (
+                          <DecisionIntelligence
+                            data={intel}
+                            theme="paper"
+                            scope="Decision"
+                          />
+                        );
+                      })()}
 
                       {/* Bottom action row */}
                       <div className="mt-5 pt-4 border-t border-ink/6 flex items-center gap-4 flex-wrap">
