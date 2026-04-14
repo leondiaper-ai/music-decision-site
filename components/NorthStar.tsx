@@ -36,36 +36,14 @@ export default function NorthStar() {
           <p className="mt-8 text-lg md:text-xl text-paper/65 leading-snug max-w-xl">
             From decision → content → spend → optimisation.
           </p>
-          <p className="mt-4 text-sm md:text-base text-paper/45 leading-snug max-w-xl">
-            Signals, behaviour and context are continuously interpreted to generate decisions.
-          </p>
 
           <div className="mt-6 inline-flex items-center gap-2 text-[11px] font-mono tracking-[0.14em] uppercase text-paper/40">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full rounded-full bg-signal opacity-60 animate-ping" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-signal" />
             </span>
-            Allocating spend based on live signals
+            Interpreting live signals
           </div>
-
-          {/* System log — makes the loop visible without adding UI */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.9 }}
-            className="mt-8 max-w-lg rounded-lg border border-paper/10 bg-paper/[0.03] p-4 font-mono text-[11px] leading-[1.7] text-paper/55"
-          >
-            <div className="text-paper/30 tracking-[0.18em] uppercase text-[10px] mb-2">[ system ]</div>
-            <div><span className="text-paper/40">›</span> stream velocity <span className="text-signal">+32%</span> (7d)</div>
-            <div><span className="text-paper/40">›</span> audience expansion detected across 2 segments</div>
-            <div><span className="text-paper/40">›</span> pattern match: early breakout</div>
-            <div className="mt-2 pt-2 border-t border-paper/10 text-paper/30 tracking-[0.18em] uppercase text-[10px]">[ decision ]</div>
-            <div className="text-paper/85">
-              <span className="text-signal">PUSH</span> — confidence <span className="text-paper/60">85%</span>
-            </div>
-            <div className="mt-2 pt-2 border-t border-paper/10 text-paper/30 tracking-[0.18em] uppercase text-[10px]">[ marketing ]</div>
-            <div className="text-paper/85">scale spend — marquee + off-platform</div>
-          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 12 }}
