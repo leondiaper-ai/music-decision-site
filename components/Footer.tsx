@@ -20,6 +20,13 @@ export default function Footer() {
 
         <div className="mt-16 grid md:grid-cols-12 gap-8 pt-10 border-t border-paper/15">
           <div className="md:col-span-5">
+            <p className="text-paper/65 text-sm md:text-base leading-snug mb-6 max-w-sm">
+              I design and prototype systems like this using AI, data, and simple
+              logic.
+            </p>
+            <p className="text-paper/55 text-xs md:text-sm leading-snug mb-6 max-w-sm">
+              Available for roles in creative technology and AI systems.
+            </p>
             <div className="eyebrow text-paper/50 mb-3">Contact</div>
             <a
               href="mailto:leondiaper@gmail.com"
@@ -34,12 +41,10 @@ export default function Footer() {
             <ul className="space-y-1.5 text-sm">
               <li>
                 <a
-                  href="https://pih-v2.vercel.app/label"
-                  target="_blank"
-                  rel="noreferrer noopener"
+                  href="/lens"
                   className="hover:text-signal transition-colors"
                 >
-                  Artist & Track Check ↗
+                  Artist & Track Lens →
                 </a>
               </li>
               <li>
@@ -59,7 +64,7 @@ export default function Footer() {
                   rel="noreferrer noopener"
                   className="hover:text-signal transition-colors"
                 >
-                  YouTube Coach ↗
+                  YouTube Campaign Coach ↗
                 </a>
               </li>
             </ul>
@@ -69,7 +74,29 @@ export default function Footer() {
             <div className="eyebrow text-paper/50 mb-3">Coming</div>
             <ul className="space-y-1.5 text-sm text-paper/70">
               <li>— Case studies</li>
-              <li>— Experiments</li>
+              <li>
+                — Experiments
+                <ul className="mt-1 ml-4 space-y-1 text-paper/45 text-[13px]">
+                  <li>
+                    ·{" "}
+                    <a
+                      href="/archive/british-state-power-ireland"
+                      className="hover:text-signal transition-colors"
+                    >
+                      Archive intelligence
+                    </a>
+                  </li>
+                  <li>
+                    ·{" "}
+                    <a
+                      href="/locations/feasibility-lens"
+                      className="hover:text-signal transition-colors"
+                    >
+                      Film location scoring
+                    </a>
+                  </li>
+                </ul>
+              </li>
               <li>— Internal tools</li>
               <li>— About / profile</li>
             </ul>
