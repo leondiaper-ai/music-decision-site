@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 const tools = [
   {
     number: "01",
+    role: "Signal Input — Artist & Track",
     title: "Artist & Track Lens",
     tagline:
       "Drop in messy data. See what's happening — and what to do next.",
@@ -16,6 +17,7 @@ const tools = [
   },
   {
     number: "02",
+    role: "Signal Input — Campaign Shape",
     title: "Campaign Timeline",
     tagline:
       "Every release moment, push and peak on one timeline — so you can see what actually moved the campaign.",
@@ -28,6 +30,7 @@ const tools = [
   },
   {
     number: "03",
+    role: "Execution Input — YouTube",
     title: "YouTube Campaign Coach",
     tagline:
       "Map shorts, premieres and uploads to release moments. Structure, not guesswork.",
@@ -46,15 +49,15 @@ export default function ToolCards() {
       <div className="mx-auto max-w-[1440px] px-6 md:px-10">
         <div className="flex items-end justify-between mb-14">
           <div>
-            <span className="eyebrow text-ink/60">04 — The Tools</span>
+            <span className="eyebrow text-ink/60">04 — Signal Inputs</span>
             <h2 className="headline font-display text-5xl md:text-7xl mt-3 max-w-3xl">
               The tools feeding
               <br />
-              <span className="italic font-light">the system.</span>
+              <span className="italic font-light">the decision engine.</span>
             </h2>
           </div>
           <p className="hidden md:block max-w-xs text-ink/70 text-sm leading-relaxed">
-            Each tool is live. Each one is an input into the decision.
+            Each tool is live. Each one is a signal input the decision engine interprets.
           </p>
         </div>
 
@@ -89,6 +92,7 @@ export default function ToolCards() {
                   {t.number}
                 </div>
 
+                <div className="eyebrow text-ink/45 mb-2">{t.role}</div>
                 <h3 className="font-display font-bold text-3xl leading-tight mb-3">
                   {t.title}
                 </h3>

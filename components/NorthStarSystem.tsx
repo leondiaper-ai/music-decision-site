@@ -13,7 +13,7 @@ export default function NorthStarSystem() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="max-w-3xl"
         >
-          <span className="eyebrow text-ink/60 mb-4 block">The principle</span>
+          <span className="eyebrow text-ink/60 mb-4 block">The Decision Engine (AI-assisted)</span>
           <h2 className="headline font-display text-4xl md:text-6xl leading-[1.05]">
             We turn data into evidence.
             <br />
@@ -21,6 +21,9 @@ export default function NorthStarSystem() {
               And evidence into decisions.
             </span>
           </h2>
+          <p className="mt-6 text-base md:text-lg text-ink/60 leading-snug max-w-2xl">
+            Each tool below is a signal input. The decision engine interprets them together — using AI to read trajectory, flag risk and recommend the next move.
+          </p>
         </motion.div>
       </div>
     </section>

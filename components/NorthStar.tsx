@@ -24,7 +24,7 @@ export default function NorthStar() {
           className="max-w-4xl"
         >
           <span className="eyebrow text-paper/50 mb-6 block">
-            Campaign System
+            Campaign Decision System
           </span>
 
           <h2 className="headline font-display text-[10vw] md:text-[6.5vw] lg:text-[5.8rem] leading-[0.95] tracking-tight">
@@ -36,6 +36,17 @@ export default function NorthStar() {
           <p className="mt-8 text-lg md:text-xl text-paper/65 leading-snug max-w-xl">
             From decision → content → spend → optimisation.
           </p>
+          <p className="mt-4 text-sm md:text-base text-paper/45 leading-snug max-w-xl">
+            Signals, behaviour and context are continuously interpreted to generate decisions.
+          </p>
+
+          <div className="mt-6 inline-flex items-center gap-2 text-[11px] font-mono tracking-[0.14em] uppercase text-paper/40">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-signal opacity-60 animate-ping" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-signal" />
+            </span>
+            Live system · signals updating
+          </div>
 
           <motion.div
             initial={{ opacity: 0, y: 12 }}
