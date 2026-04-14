@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import AIExplainer from "@/components/AIExplainer";
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -1283,9 +1284,32 @@ export default function CampaignPage() {
                 <p className="text-center font-mono text-[10.5px] text-ink/40 mb-1.5">
                   projected · {output.outcome}
                 </p>
-                <p className="text-center font-mono text-[10px] text-ink/25 italic mb-6">
+                <p className="text-center font-mono text-[10px] text-ink/25 italic mb-4">
                   confidence adjusted using prior campaign outcomes
                 </p>
+
+                {/* AI pattern read — layered on top of structured campaign signals */}
+                <div className="mb-6">
+                  <AIExplainer
+                    mode="timeline"
+                    scope="campaign"
+                    decision={output.decision}
+                    why={activeScenario?.lens?.reasoning ?? activeScenario?.hint ?? ""}
+                    signals={[
+                      activeScenario?.context ?? "",
+                      activeScenario?.lens?.catalogueDepth ?? "",
+                      activeScenario?.lens?.trackFingerprint ?? "",
+                      activeScenario?.lens?.artistLabel ?? "",
+                      `projected outcome · ${output.outcome}`,
+                    ].filter(Boolean)}
+                    moments={[
+                      activeScenario?.situation ?? "",
+                      activeScenario?.hint ?? "",
+                      `deployment · ${output.deployment}`,
+                    ].filter(Boolean)}
+                  />
+                </div>
+
                 <div className="flex justify-center gap-3">
                   <button
                     onClick={reset}

@@ -1,17 +1,16 @@
 "use client";
 
 /**
- * AIExplainer
+ * AIExplainer — "AI-assisted perspective"
  *
- * A compact, expandable panel that sits below any decision surface in
- * the product. It asks the /api/explain route for a grounded, natural-
- * language explanation of why the engine reached its decision.
+ * Sits below any decision surface and adds a second layer of thinking:
+ *   • Shift potential — what would need to change to flip the decision
+ *   • Risk signal    — what breaks if the call is ignored
+ *   • Confidence     — how stable the underlying signals are
+ *   • Pattern read   — (timeline mode only) the shape of the campaign
  *
- * Design intent:
- *   • Feels like part of the product, not a chatbot bolted on
- *   • No chat UI. No scrolling transcript. One card, one explanation.
- *   • Visible "AI-assisted" signal for recruiters / portfolio readers
- *   • Grounded in structured decision inputs — never invents metrics
+ * Never repeats the engine's existing "why". Grounded entirely in the
+ * structured decision inputs.
  */
 
 import { useCallback, useState } from "react";
@@ -20,10 +19,11 @@ import { motion, AnimatePresence } from "framer-motion";
 type Confidence = "High" | "Medium" | "Low";
 
 interface ExplainerResponse {
-  summary: string;
-  keySignals: string[];
+  shiftPotential: string;
+  riskSignal: string;
   confidence: Confidence;
-  caution: string;
+  confidenceNote: string;
+  patternRead: string;
   source?: "model" | "synth";
 }
 
@@ -33,8 +33,10 @@ export interface AIExplainerProps {
   signals: string[];
   actions?: string[];
   scope?: "artist" | "track" | "campaign";
-  /** Optional accent colour class, e.g. "text-push" */
-  accentClass?: string;
+  /** "decision" (default) or "timeline" — timeline shows pattern read. */
+  mode?: "decision" | "timeline";
+  /** Ordered campaign moments, only used in timeline mode. */
+  moments?: string[];
 }
 
 function confidenceDot(c: Confidence) {
@@ -49,7 +51,8 @@ export default function AIExplainer({
   signals,
   actions,
   scope,
-  accentClass = "text-ink",
+  mode = "decision",
+  moments,
 }: AIExplainerProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -63,23 +66,25 @@ export default function AIExplainer({
       const res = await fetch("/api/explain", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ decision, why, signals, actions, scope }),
+        body: JSON.stringify({ decision, why, signals, actions, scope, mode, moments }),
       });
       if (!res.ok) throw new Error("request failed");
       const json = (await res.json()) as ExplainerResponse;
       setData(json);
-    } catch (e) {
-      setError("Couldn't generate an explanation. Try again.");
+    } catch {
+      setError("Couldn't generate a perspective. Try again.");
     } finally {
       setLoading(false);
     }
-  }, [decision, why, signals, actions, scope]);
+  }, [decision, why, signals, actions, scope, mode, moments]);
 
   const handleToggle = useCallback(() => {
     const next = !open;
     setOpen(next);
     if (next && !data && !loading) fetchExplanation();
   }, [open, data, loading, fetchExplanation]);
+
+  const triggerLabel = mode === "timeline" ? "AI pattern read" : "AI-assisted perspective";
 
   return (
     <div className="mt-5 pt-4 border-t border-ink/6">
@@ -95,7 +100,7 @@ export default function AIExplainer({
             AI
           </span>
           <span className="text-sm font-medium text-ink/75 group-hover:text-ink transition-colors">
-            Why this recommendation?
+            {triggerLabel}
           </span>
         </span>
         <motion.span
@@ -108,7 +113,6 @@ export default function AIExplainer({
         </motion.span>
       </button>
 
-      {/* Panel */}
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
@@ -121,8 +125,10 @@ export default function AIExplainer({
           >
             <div className="mt-4 rounded-xl border border-ink/10 bg-paper/80 p-5 md:p-6">
               {/* Eyebrow */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="eyebrow text-ink/30">AI-assisted explanation</div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="eyebrow text-ink/30">
+                  {mode === "timeline" ? "AI pattern read" : "AI-assisted perspective"}
+                </div>
                 {data?.source && (
                   <div className="text-[10px] font-mono tracking-[0.12em] uppercase text-ink/25">
                     {data.source === "model" ? "Claude · Haiku" : "Grounded synth"}
@@ -133,11 +139,7 @@ export default function AIExplainer({
               {loading && (
                 <div className="flex items-center gap-3 text-sm text-ink/40 py-1">
                   <span className="inline-block w-4 h-4 border-2 border-ink/15 border-t-ink rounded-full animate-spin" />
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="leading-relaxed"
-                  >
+                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="leading-relaxed">
                     Reasoning over structured inputs…
                   </motion.span>
                 </div>
@@ -160,49 +162,44 @@ export default function AIExplainer({
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
+                  className="space-y-4"
                 >
-                  {/* Summary */}
-                  <p className={`text-[15px] md:text-base leading-relaxed ${accentClass === "text-ink" ? "text-ink/85" : "text-ink/85"}`}>
-                    {data.summary}
-                  </p>
-
-                  {/* Key signals considered */}
-                  {data.keySignals.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-ink/6">
-                      <div className="eyebrow text-ink/30 mb-2">Strongest signals</div>
-                      <ul className="space-y-1.5">
-                        {data.keySignals.map((s) => (
-                          <li
-                            key={s}
-                            className="flex items-start gap-2 text-[13px] text-ink/60 leading-relaxed"
-                          >
-                            <span className="text-ink/25 mt-0.5 shrink-0">·</span>
-                            {s}
-                          </li>
-                        ))}
-                      </ul>
+                  {/* TIMELINE: single pattern read */}
+                  {mode === "timeline" && data.patternRead && (
+                    <div>
+                      <p className="text-[15px] md:text-base text-ink/85 leading-relaxed">
+                        {data.patternRead}
+                      </p>
                     </div>
                   )}
 
-                  {/* Confidence + caution row */}
-                  <div className="mt-4 pt-4 border-t border-ink/6 flex flex-wrap items-center gap-x-5 gap-y-2">
+                  {/* DECISION: three blocks */}
+                  {mode === "decision" && (
+                    <>
+                      <PerspectiveBlock label="Shift potential" body={data.shiftPotential} />
+                      <PerspectiveBlock label="Risk signal" body={data.riskSignal} />
+                    </>
+                  )}
+
+                  {/* Confidence row — shown in both modes */}
+                  <div className="pt-4 border-t border-ink/6 flex flex-wrap items-center gap-x-5 gap-y-2">
                     <div className="flex items-center gap-2">
                       <span className={`inline-block w-1.5 h-1.5 rounded-full ${confidenceDot(data.confidence)}`} />
-                      <span className="text-[11px] font-mono tracking-[0.14em] uppercase text-ink/40">
+                      <span className="text-[11px] font-mono tracking-[0.14em] uppercase text-ink/45">
                         Confidence · {data.confidence}
                       </span>
                     </div>
-                    {data.caution && (
-                      <div className="text-[12px] text-ink/50 leading-snug">
-                        {data.caution}
+                    {data.confidenceNote && (
+                      <div className="text-[12px] text-ink/55 leading-snug">
+                        {data.confidenceNote}
                       </div>
                     )}
                   </div>
 
-                  {/* Footer row */}
-                  <div className="mt-4 pt-4 border-t border-ink/6 flex items-center justify-between gap-3 flex-wrap">
+                  {/* Footer */}
+                  <div className="pt-4 border-t border-ink/6 flex items-center justify-between gap-3 flex-wrap">
                     <p className="text-[10px] font-mono tracking-[0.12em] uppercase text-ink/30">
-                      Generated from structured inputs + decision logic
+                      Layered on top of structured decision logic
                     </p>
                     <button
                       onClick={fetchExplanation}
@@ -217,6 +214,16 @@ export default function AIExplainer({
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function PerspectiveBlock({ label, body }: { label: string; body: string }) {
+  if (!body) return null;
+  return (
+    <div>
+      <div className="eyebrow text-ink/35 mb-1.5">{label}</div>
+      <p className="text-[14.5px] md:text-[15px] text-ink/85 leading-relaxed">{body}</p>
     </div>
   );
 }

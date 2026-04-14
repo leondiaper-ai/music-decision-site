@@ -21,18 +21,22 @@ function parseState(decision: string): ExplainerInput["state"] {
 
 function normalise(body: any): ExplainerInput | null {
   if (!body || typeof body !== "object") return null;
-  const { decision, why, signals, actions, scope } = body;
+  const { decision, why, signals, actions, scope, mode, moments } = body;
   if (typeof decision !== "string" || typeof why !== "string") return null;
   if (!Array.isArray(signals)) return null;
   return {
     decision,
     state: parseState(decision),
     why,
-    signals: signals.filter((s): s is string => typeof s === "string").slice(0, 6),
+    signals: signals.filter((s): s is string => typeof s === "string").slice(0, 8),
     actions: Array.isArray(actions)
       ? actions.filter((a): a is string => typeof a === "string").slice(0, 6)
       : undefined,
     scope: scope === "artist" || scope === "track" || scope === "campaign" ? scope : undefined,
+    mode: mode === "timeline" ? "timeline" : "decision",
+    moments: Array.isArray(moments)
+      ? moments.filter((m): m is string => typeof m === "string").slice(0, 12)
+      : undefined,
   };
 }
 
@@ -47,27 +51,25 @@ async function callAnthropic(input: ExplainerInput, key: string): Promise<Explai
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 400,
+        max_tokens: 500,
         system: EXPLAINER_SYSTEM_PROMPT,
-        messages: [
-          { role: "user", content: buildExplainerUserMessage(input) },
-        ],
+        messages: [{ role: "user", content: buildExplainerUserMessage(input) }],
       }),
     });
     if (!res.ok) return null;
     const data = await res.json();
     const text = data?.content?.[0]?.text;
     if (typeof text !== "string") return null;
-    // Extract JSON from the response.
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return null;
     const parsed = JSON.parse(match[0]);
-    if (typeof parsed.summary !== "string") return null;
+    if (typeof parsed.shiftPotential !== "string" || typeof parsed.riskSignal !== "string") return null;
     return {
-      summary: parsed.summary,
-      keySignals: Array.isArray(parsed.keySignals) ? parsed.keySignals.slice(0, 3) : [],
+      shiftPotential: parsed.shiftPotential,
+      riskSignal: parsed.riskSignal,
       confidence: ["High", "Medium", "Low"].includes(parsed.confidence) ? parsed.confidence : "Medium",
-      caution: typeof parsed.caution === "string" ? parsed.caution : "",
+      confidenceNote: typeof parsed.confidenceNote === "string" ? parsed.confidenceNote : "",
+      patternRead: typeof parsed.patternRead === "string" ? parsed.patternRead : "",
     };
   } catch {
     return null;

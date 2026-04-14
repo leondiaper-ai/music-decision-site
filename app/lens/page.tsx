@@ -592,6 +592,9 @@ export default function LensPage() {
                         <div className={`font-display font-black text-3xl md:text-4xl leading-tight tracking-tight ${result.decisionColor}`}>
                           {result.decision}
                         </div>
+                        <p className="mt-3 text-[11px] md:text-[12px] text-ink/40 leading-snug max-w-lg">
+                          Decisions are generated from structured performance signals, with AI used to interpret and extend the model.
+                        </p>
                       </div>
 
                       {/* WHY */}
@@ -628,14 +631,13 @@ export default function LensPage() {
                         </ul>
                       </div>
 
-                      {/* AI DECISION EXPLAINER — LLM reasoning over structured decision inputs */}
+                      {/* AI-ASSISTED PERSPECTIVE — adds shift potential, risk, confidence */}
                       <AIExplainer
                         decision={result.decision}
                         why={result.why}
                         signals={result.signals}
                         actions={result.actions}
                         scope={lens}
-                        accentClass={result.decisionColor}
                       />
 
                       {/* SYSTEM SIGNAL — reinforces that the decision is systematic */}

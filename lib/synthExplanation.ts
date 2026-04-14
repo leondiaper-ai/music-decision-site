@@ -1,86 +1,158 @@
 /**
- * Grounded fallback explainer.
+ * Grounded fallback for the AI-assisted perspective layer.
  *
  * Used when no ANTHROPIC_API_KEY is configured. It never invents data —
- * it composes a short explanation by recombining the structured inputs
- * the engine already produced. This keeps the demo working end-to-end
- * and mirrors the constraints in the LLM prompt.
+ * it composes short, distinct perspective blocks by recombining the
+ * structured inputs the engine already produced.
+ *
+ * The design goal: even without a live model call, the layer adds NEW
+ * value (shift / risk / confidence / pattern) rather than repeating the
+ * engine's "why".
  */
 
 import type { ExplainerInput } from "./explainerPrompt";
 
 export interface ExplainerOutput {
-  summary: string;
-  keySignals: string[];
+  shiftPotential: string;
+  riskSignal: string;
   confidence: "High" | "Medium" | "Low";
-  caution: string;
+  confidenceNote: string;
+  patternRead: string;
 }
 
-function leadIn(state: ExplainerInput["state"]): string {
-  switch (state) {
-    case "PUSH":
-      return "This leans PUSH because";
-    case "TEST":
-      return "This sits closer to TEST than PUSH because";
-    case "HOLD":
-      return "This lands on HOLD because";
+/* ── Signal vocabulary extracted from the provided inputs ──────────── */
+
+function hasAny(haystack: string, needles: string[]): boolean {
+  const h = haystack.toLowerCase();
+  return needles.some((n) => h.includes(n.toLowerCase()));
+}
+
+function joinSignals(input: ExplainerInput): string {
+  return [input.why, ...input.signals].join(" · ");
+}
+
+/* ── Shift potential: what would flip the decision ─────────────────── */
+
+function shiftPotential(input: ExplainerInput): string {
+  const text = joinSignals(input);
+  const mentionsSave = hasAny(text, ["save rate", "saves"]);
+  const mentionsRetention = hasAny(text, ["retention", "skip", "day 3", "day-three", "follow-through"]);
+  const mentionsReach = hasAny(text, ["reach", "listeners", "broaden", "expand"]);
+  const mentionsVelocity = hasAny(text, ["velocity", "trending", "momentum", "compounding"]);
+
+  switch (input.state) {
+    case "HOLD": {
+      if (mentionsRetention && mentionsReach)
+        return "Flips to PUSH if retention lifts past day 3 and reach starts broadening beyond the core audience.";
+      if (mentionsReach)
+        return "Flips to TEST if reach starts expanding in a single segment before any wider commitment.";
+      if (mentionsSave)
+        return "Flips to TEST if save rate climbs above baseline for two consecutive weeks.";
+      return "Flips to TEST if one named signal — reach, save rate, or retention — moves above baseline for 2+ weeks.";
+    }
+    case "TEST": {
+      if (mentionsSave && mentionsVelocity)
+        return "Flips to PUSH if save rate holds above baseline and velocity sustains through the next release cycle.";
+      if (mentionsReach)
+        return "Flips to PUSH if reach broadens outside the responsive segment within 14 days.";
+      return "Flips to PUSH if the early signal proves durable across two full reporting windows.";
+    }
+    case "PUSH": {
+      if (mentionsRetention)
+        return "Downgrades to HOLD if retention softens or the save curve flattens over the next two weeks.";
+      return "Downgrades to HOLD if compounding stalls — flat listeners, no new reach, or save rate drifting to baseline.";
+    }
     default:
-      return "The engine chose this because";
+      return "Flips if the strongest signal in the current state reverses for two consecutive reporting windows.";
   }
 }
 
-function confidenceFor(input: ExplainerInput): ExplainerOutput["confidence"] {
-  const { state, signals, why } = input;
-  const weak = /plateau|flat|not pulling|shallow|thin|below baseline|burn|drop/i.test(
-    `${why} ${signals.join(" ")}`
-  );
-  const strong = /above baseline|compounding|expanding|trending up|broadening|velocity/i.test(
-    `${why} ${signals.join(" ")}`
-  );
-  if (state === "PUSH" && strong && !weak) return "High";
-  if (state === "HOLD") return weak ? "Medium" : "Medium";
-  if (state === "TEST") return "Medium";
-  return strong ? "Medium" : "Low";
+/* ── Risk signal: fragility if the call is ignored ─────────────────── */
+
+function riskSignal(input: ExplainerInput): string {
+  const text = joinSignals(input);
+  switch (input.state) {
+    case "HOLD": {
+      if (hasAny(text, ["drop", "skip", "weak", "day 3", "day-three"]))
+        return "Spending now burns budget into a weak retention window and teaches the algorithm the wrong lesson.";
+      if (hasAny(text, ["plateau", "flat", "not pulling"]))
+        return "Pushing past a plateau without a new signal compounds a flat audience instead of expanding it.";
+      return "Scaling ahead of the evidence spends against noise — and the next real signal gets harder to read.";
+    }
+    case "TEST": {
+      if (hasAny(text, ["shallow", "thin", "early"]))
+        return "Skipping the test and scaling too early risks confusing a narrow early signal for a broad one.";
+      return "Committing full budget on a thin signal caps upside if the early traction doesn't broaden.";
+    }
+    case "PUSH": {
+      if (hasAny(text, ["editorial", "playlist"]))
+        return "Under-committing now lets momentum cool before paid and editorial supports can compound it.";
+      return "Holding back now lets a compounding window pass — the same signals are more expensive to restart later.";
+    }
+    default:
+      return "Acting against the current call stretches the signal-to-decision loop and weakens the next read.";
+  }
 }
 
-function cautionFor(input: ExplainerInput): string {
-  const text = `${input.why} ${input.signals.join(" ")}`;
-  if (/shallow|thin|flat/i.test(text))
-    return "The signal is real but still narrow — keep the test contained.";
-  if (/drop|burn|weak/i.test(text))
-    return "Scaling now risks burning budget into a weak window.";
-  if (input.state === "PUSH")
-    return "";
-  if (input.state === "TEST")
-    return "Re-check signals before any wider commitment.";
-  return "";
+/* ── Confidence ────────────────────────────────────────────────────── */
+
+function confidence(input: ExplainerInput): { level: ExplainerOutput["confidence"]; note: string } {
+  const text = joinSignals(input);
+  const weak = hasAny(text, ["thin", "shallow", "early", "flat", "plateau", "unproven"]);
+  const strong = hasAny(text, ["above baseline", "compounding", "expanding", "trending up", "broadening", "velocity"]);
+  const mixed = hasAny(text, ["mixed", "but", "however", "trade-off", "uneven"]);
+
+  if (input.state === "PUSH" && strong && !weak) {
+    return { level: "High", note: "Multiple signals moving together, not a single-metric spike." };
+  }
+  if (input.state === "TEST") {
+    return { level: "Medium", note: "Early directional signal — real, but not yet broad or durable." };
+  }
+  if (input.state === "HOLD" && weak) {
+    return { level: "Medium", note: "Core audience is stable; no fresh signal to act on." };
+  }
+  if (mixed) {
+    return { level: "Medium", note: "Signals are pointing in different directions — act cautiously." };
+  }
+  return {
+    level: strong ? "Medium" : "Low",
+    note: strong ? "Trend is forming but not yet confirmed across cycles." : "Evidence is thin — treat any action as reversible.",
+  };
+}
+
+/* ── Pattern read (timeline mode) ──────────────────────────────────── */
+
+function patternRead(input: ExplainerInput): string {
+  if ((input.mode ?? "decision") !== "timeline") return "";
+  const text = joinSignals(input);
+  const moments = (input.moments ?? []).join(" ");
+  const all = `${text} ${moments}`.toLowerCase();
+
+  if (/second wind|resurge|reawaken/.test(all)) {
+    return "Second-wind pattern — post-release traction flattens, then lifts again as campaign moments re-engage the audience.";
+  }
+  if (/delayed|slow build|late|breakout/.test(all)) {
+    return "Delayed-breakout pattern — early traction builds gradually before a second wave driven by campaign moments.";
+  }
+  if (/spike|drop|day 1|day-one|decay/.test(all)) {
+    return "Spike-and-decay pattern — a sharp day-one peak that the audience doesn't carry forward once campaign support thins.";
+  }
+  if (/plateau|flat|stall/.test(all)) {
+    return "Flat-plateau pattern — campaign moments land without lifting the baseline, suggesting the audience is held, not growing.";
+  }
+  if (/compounding|expanding|broaden|growth/.test(all)) {
+    return "Sustained-growth pattern — each campaign moment compounds on the last, with reach broadening through the cycle.";
+  }
+  return "Mixed pattern — no single shape dominates; campaign moments are creating short lifts without a clear overall trajectory.";
 }
 
 export function synthesiseExplanation(input: ExplainerInput): ExplainerOutput {
-  const lead = leadIn(input.state);
-  const headline = input.why.replace(/\s+/g, " ").trim();
-  const firstSignal = (input.signals[0] || "").toLowerCase();
-
-  // Build a 2-sentence summary grounded entirely in provided text.
-  const summary = firstSignal
-    ? `${lead} ${headline.charAt(0).toLowerCase()}${headline.slice(1)} ${
-        input.state === "PUSH"
-          ? "The strongest pull: " + firstSignal + "."
-          : input.state === "TEST"
-          ? "Enough early signal to probe, not enough to commit."
-          : "Spend here would outrun the evidence."
-      }`
-    : `${lead} ${headline}`;
-
-  const keySignals = input.signals.slice(0, 3).map((s) =>
-    // clip to first ~12 words
-    s.split(/\s+/).slice(0, 12).join(" ")
-  );
-
+  const c = confidence(input);
   return {
-    summary: summary.replace(/\s+/g, " ").trim(),
-    keySignals,
-    confidence: confidenceFor(input),
-    caution: cautionFor(input),
+    shiftPotential: shiftPotential(input),
+    riskSignal: riskSignal(input),
+    confidence: c.level,
+    confidenceNote: c.note,
+    patternRead: patternRead(input),
   };
 }
