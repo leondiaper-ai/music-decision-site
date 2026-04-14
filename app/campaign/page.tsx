@@ -1140,7 +1140,9 @@ export default function CampaignPage() {
         </div>
       </section>
 
-      {/* System map — persistent anchor */}
+      {/* System map — persistent anchor. When a scenario resolves, the
+          decision + intelligence layer anchor directly beneath the map so
+          injection → decision → reasoning happens in one zone. */}
       <section className="mx-auto max-w-[1120px] px-4 md:px-8 -mt-28 md:-mt-40 relative z-10">
         <SystemMap
           state={currentState}
@@ -1148,6 +1150,82 @@ export default function CampaignPage() {
           mode={mode}
           output={isResolved ? output : null}
         />
+
+        <AnimatePresence initial={false}>
+          {isResolved && output && (
+            <motion.div
+              key="resolved-inline"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.35, delay: 0.15 }}
+              className="mx-auto mt-6 md:mt-8 max-w-[560px] rounded-2xl border border-ink/10 bg-paper shadow-[0_10px_30px_rgba(14,14,14,0.06)] p-5 md:p-6"
+            >
+              {activeScenario && (
+                <p className="mb-4 text-[12px] text-ink/50 italic leading-snug">
+                  <span className="font-mono not-italic uppercase tracking-[0.14em] text-ink/30 mr-2">Scenario</span>
+                  {activeScenario.situation}
+                </p>
+              )}
+              {(() => {
+                const d = output.decision;
+                const decisionColor =
+                  d === "PUSH" ? "text-signal" : d === "TEST" ? "text-electric" : "text-warning";
+                const intel: Intelligence = {
+                  decision: d,
+                  decisionColor,
+                  why:
+                    d === "PUSH"
+                      ? "Culture and velocity moved together — momentum is broad, not single-source."
+                      : d === "TEST"
+                      ? "A save curve is forming, but reach has not broadened past the initial segment."
+                      : "Catalogue is holding, but no new cohort has started to pull.",
+                  doNow:
+                    d === "PUSH"
+                      ? "Scale support around the working moment while behaviour stays elevated."
+                      : d === "TEST"
+                      ? "Run a contained test against the responsive segment — no broad commitment yet."
+                      : "Hold spend and protect the base — wait for one signal to separate.",
+                  aiRead:
+                    d === "PUSH"
+                      ? "Save rate, reach and retention are lifting together — the shape reads as sustained, not a single-metric spike."
+                      : d === "TEST"
+                      ? "Early conversion is live but narrow — the lift is real in one segment and hasn't radiated yet."
+                      : "Engagement is stable at the base — nothing fresh is pulling, so there is no cohort to spend into.",
+                  spendLogic:
+                    d === "PUSH"
+                      ? `Allocate against the working moment — concentrated paid + editorial; confidence elevated by ${output.confidence}% projection.`
+                      : d === "TEST"
+                      ? "Controlled test spend against the responsive segment — scale only once reach broadens."
+                      : "Hold spend. Any capital here teaches the wrong lesson about the base.",
+                  watch:
+                    d === "PUSH"
+                      ? "Whether streams hold above the new baseline for 7–10 days."
+                      : d === "TEST"
+                      ? "Save rate holding above baseline through the next release window."
+                      : "One signal — save rate, reach or retention — clearing baseline for two reporting weeks.",
+                  ifConfirmed:
+                    d === "PUSH"
+                      ? "Extend reach and move from backing momentum to scaling it across adjacent cohorts."
+                      : d === "TEST"
+                      ? "Shift from test to push — commit support to the format the signal validated."
+                      : "Move to a contained test on the format starting to separate.",
+                  signalLine: `projected ${output.outcome}`,
+                };
+                return <DecisionIntelligence data={intel} theme="paper" />;
+              })()}
+
+              <div className="mt-5 pt-4 border-t border-ink/6 flex justify-end">
+                <button
+                  onClick={reset}
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-4 py-2 text-xs font-mono font-medium hover:bg-ink hover:text-paper transition-colors"
+                >
+                  <span className="group-hover:-translate-x-0.5 transition-transform">↺</span> Inject another scenario
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       {/* Live processing feed + product UI fragments */}
@@ -1268,87 +1346,6 @@ export default function CampaignPage() {
               </motion.div>
             )}
 
-            {isResolved && output && (
-              <motion.div
-                key="resolved"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-                className="max-w-[640px] mx-auto"
-              >
-                <div className="text-center mb-5">
-                  <p className="font-mono text-[10px] text-ink/30 uppercase tracking-[0.14em]">scenario resolved</p>
-                  <p className="mt-1 text-[13px] text-ink/55 italic">{activeScenario?.situation}</p>
-                </div>
-                <p className="text-center font-mono text-[10.5px] text-ink/40 mb-1.5">
-                  projected · {output.outcome}
-                </p>
-                <p className="text-center font-mono text-[10px] text-ink/25 italic mb-4">
-                  confidence adjusted using prior campaign outcomes
-                </p>
-
-                {/* System 1 / System 2 — scenario decision with collapsible intelligence */}
-                <div className="mx-auto max-w-[540px] mb-5">
-                  {(() => {
-                    const d = output.decision;
-                    const decisionColor =
-                      d === "PUSH" ? "text-signal" : d === "TEST" ? "text-electric" : "text-warning";
-                    const intel: Intelligence = {
-                      decision: d,
-                      decisionColor,
-                      why:
-                        d === "PUSH"
-                          ? "Culture and velocity moved together — momentum is broad, not single-source."
-                          : d === "TEST"
-                          ? "A save curve is forming, but reach has not broadened past the initial segment."
-                          : "Catalogue is holding, but no new cohort has started to pull.",
-                      doNow:
-                        d === "PUSH"
-                          ? "Scale support around the working moment while behaviour stays elevated."
-                          : d === "TEST"
-                          ? "Run a contained test against the responsive segment — no broad commitment yet."
-                          : "Hold spend and protect the base — wait for one signal to separate.",
-                      aiRead:
-                        d === "PUSH"
-                          ? "Save rate, reach and retention are lifting together — the shape reads as sustained, not a single-metric spike."
-                          : d === "TEST"
-                          ? "Early conversion is live but narrow — the lift is real in one segment and hasn't radiated yet."
-                          : "Engagement is stable at the base — nothing fresh is pulling, so there is no cohort to spend into.",
-                      spendLogic:
-                        d === "PUSH"
-                          ? `Allocate against the working moment — concentrated paid + editorial; confidence elevated by ${output.confidence}% projection.`
-                          : d === "TEST"
-                          ? "Controlled test spend against the responsive segment — scale only once reach broadens."
-                          : "Hold spend. Any capital here teaches the wrong lesson about the base.",
-                      watch:
-                        d === "PUSH"
-                          ? "Whether streams hold above the new baseline for 7–10 days."
-                          : d === "TEST"
-                          ? "Save rate holding above baseline through the next release window."
-                          : "One signal — save rate, reach or retention — clearing baseline for two reporting weeks.",
-                      ifConfirmed:
-                        d === "PUSH"
-                          ? "Extend reach and move from backing momentum to scaling it across adjacent cohorts."
-                          : d === "TEST"
-                          ? "Shift from test to push — commit support to the format the signal validated."
-                          : "Move to a contained test on the format starting to separate.",
-                      signalLine: `projected ${output.outcome}`,
-                    };
-                    return <DecisionIntelligence data={intel} theme="paper" scope="Scenario result" />;
-                  })()}
-                </div>
-
-                <div className="flex justify-center gap-3">
-                  <button
-                    onClick={reset}
-                    className="group inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-4 py-2 text-xs font-mono font-medium hover:bg-ink hover:text-paper transition-colors"
-                  >
-                    <span className="group-hover:-translate-x-0.5 transition-transform">↺</span> Inject another scenario
-                  </button>
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
         </div>
       </section>
