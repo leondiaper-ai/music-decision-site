@@ -49,3 +49,20 @@ body::before {
 .animate-marquee {
   animation: marquee 40s linear infinite;
 }
+
+/* AI trigger — slow shimmer sweep suggesting 'thinking' */
+@keyframes ai-shimmer {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* North Star decision panel — subtle breathing */
+@keyframes decision-breath {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.008); }
+}
+.animate-decision-breath {
+  animation: decision-breath 4.8s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}

@@ -333,6 +333,26 @@ function SystemMap({ state, compact, displayConfidence, mode, output }: {
               strokeLinecap="round"
               style={{ transition: "all 0.6s ease" }}
             />
+            {/* Ambient always-on flow — very subtle, always moving toward center */}
+            {!lit && (
+              <path
+                d={path}
+                fill="none"
+                stroke="#0E0E0E"
+                strokeWidth={0.75}
+                strokeDasharray="2 14"
+                opacity={0.14}
+                strokeLinecap="round"
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  from="0"
+                  to="-32"
+                  dur={`${5 + mod.idx * 0.7}s`}
+                  repeatCount="indefinite"
+                />
+              </path>
+            )}
             {/* Animated dashed flow when active */}
             {lit && (
               <path
@@ -503,6 +523,24 @@ function SystemMap({ state, compact, displayConfidence, mode, output }: {
           const py = CY - ph / 2;
           return (
             <g>
+              {/* Breathing glow halo — slow, barely perceptible */}
+              <rect
+                x={px - 6}
+                y={py - 6}
+                width={pw + 12}
+                height={ph + 12}
+                rx={18}
+                fill="none"
+                stroke={decColor}
+                strokeWidth={1}
+                opacity={0.18}
+              >
+                <animate attributeName="opacity" values="0.10;0.22;0.10" dur="4.2s" repeatCount="indefinite" />
+                <animate attributeName="x" values={`${px - 4};${px - 10};${px - 4}`} dur="4.2s" repeatCount="indefinite" />
+                <animate attributeName="y" values={`${py - 4};${py - 10};${py - 4}`} dur="4.2s" repeatCount="indefinite" />
+                <animate attributeName="width" values={`${pw + 8};${pw + 20};${pw + 8}`} dur="4.2s" repeatCount="indefinite" />
+                <animate attributeName="height" values={`${ph + 8};${ph + 20};${ph + 8}`} dur="4.2s" repeatCount="indefinite" />
+              </rect>
               {/* Shadow behind panel */}
               <rect x={px + 3} y={py + 6} width={pw} height={ph} rx={14} fill="#0E0E0E" opacity={0.12} />
               {/* Panel body */}
@@ -1351,11 +1389,34 @@ function NorthStarIntelligence({
         className="group relative inline-flex items-center gap-2.5 rounded-full border border-ink/15 bg-paper px-4 py-2 text-[11.5px] font-mono uppercase tracking-[0.14em] text-ink/70 shadow-[0_6px_18px_rgba(14,14,14,0.08)] hover:border-ink/30 hover:shadow-[0_8px_22px_rgba(14,14,14,0.12)] transition-all"
       >
         <span className="relative inline-flex items-center justify-center">
+          {/* Outer ripple — activates briefly when decision updates */}
+          {justResolved && (
+            <>
+              <span
+                aria-hidden
+                className="absolute inset-[-10px] rounded-full border border-ink/30 animate-ping"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-[-6px] rounded-full bg-ink/25 animate-ping"
+                style={{ animationDelay: "180ms" }}
+              />
+            </>
+          )}
+          {/* Idle halo — soft pulse, tightens on hover */}
           <span
             aria-hidden
-            className={`absolute inset-[-6px] rounded-full bg-ink/15 ${
-              justResolved ? "animate-ping" : "animate-pulse"
-            }`}
+            className="absolute inset-[-6px] rounded-full bg-ink/15 animate-pulse transition-all duration-300 group-hover:inset-[-3px] group-hover:bg-ink/25"
+          />
+          {/* Inner shimmer — slow conic sweep signaling 'thinking' */}
+          <span
+            aria-hidden
+            className="absolute inset-[-2px] rounded-full opacity-70 mix-blend-overlay"
+            style={{
+              background:
+                "conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,0.45) 40deg, transparent 80deg, transparent 360deg)",
+              animation: "ai-shimmer 3.2s linear infinite",
+            }}
           />
           <span className="relative inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-ink text-paper text-[9px] font-mono tracking-[0.1em]">
             AI
